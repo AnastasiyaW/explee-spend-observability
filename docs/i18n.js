@@ -148,6 +148,11 @@ const I18N = {
                   "помечены отдельно и свёрнуты — только из-за этого страница читается легче " +
                   '<a href="https://github.com/AnastasiyaW/explee-spend-observability/blob/main/' +
                   'TRACE-task1.redacted.md">исходного файла</a>, который и остаётся артефактом.',
+    "trace.reading": "Чтение",
+    "trace.reading.asis": "как набрано",
+    "trace.reading.fixed": "с исправленными опечатками",
+    "trace.reading.note": "записью считается дословный файл; здесь правятся только опечатки в " +
+                          "сообщениях человека",
     "trace.f.total": "сообщений",
     "trace.f.human": "от человека",
     "trace.f.agent": "от агента",

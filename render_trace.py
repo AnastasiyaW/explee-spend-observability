@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
 import sys
 from pathlib import Path
@@ -37,6 +38,9 @@ STAMP = re.compile(r"^`(\d{4}-\d{2}-\d{2}T[0-9:.]+Z?)`\s*$")
 FENCE = re.compile(r"^```(\w*)\s*$")
 TOOL_CALL = re.compile(r"^\*\*-> tool: `(.+?)`\*\*", re.M)
 TOOL_RESULT = re.compile(r"^\*\*<- result\*\*", re.M)
+# Machine text wearing the human's role.
+HARNESS_IN_USER_TURN = re.compile(
+    r"^\s*(?:<task-notification>|Stop hook feedback:|Caveat:|\[Request interrupted)", re.M)
 
 
 def split_blocks(text: str):
@@ -76,8 +80,40 @@ def classify(block) -> str:
     if role.startswith("System"):
         return "system"
     if role.startswith("User"):
-        return "tool_result" if TOOL_RESULT.search(body) else "human"
+        if TOOL_RESULT.search(body):
+            return "tool_result"
+        # A background agent finishing, or a hook answering back, arrives on the
+        # human's own channel. The exporter labels these correctly now, but the
+        # trace that shipped before that fix still calls one of them a message
+        # the person typed - which is why its header says eleven and the truth
+        # is ten. Content decides, not the label in the file.
+        return "system" if HARNESS_IN_USER_TURN.search(body) else "human"
     return "tool_call" if TOOL_CALL.search(body) else "assistant"
+
+
+REPO = Path(__file__).resolve().parent
+BLOB = "https://github.com/AnastasiyaW/explee-spend-observability/blob/main/"
+
+
+def _link(match) -> str:
+    """Resolve a link the way a reader needs, without touching its text.
+
+    The trace was written from the repository root; the page is served out of
+    docs/, so every relative target in it 404s. A target that exists in the
+    repository becomes a blob URL. A target that does not - a handoff, a rule,
+    anything living outside this repo - keeps its text and loses the anchor,
+    because a dead link is worse than no link.
+    """
+    text, target = match.group(1), match.group(2)
+    if target.startswith(("http://", "https://", "#", "mailto:")):
+        return '<a href="{}">{}</a>'.format(target, text)
+    local = target.split("#", 1)[0]
+    if local and (REPO / local).exists():
+        return '<a href="{}{}">{}</a>'.format(BLOB, local, text)
+    # The target is real but lives outside this repository - a handoff, a rule.
+    # Linking it would 404; dropping it would lose what the writer pointed at.
+    # So it stays, as text.
+    return '{} <span class="deadpath">{}</span>'.format(text, target)
 
 
 def md_inline(text: str) -> str:
@@ -85,7 +121,7 @@ def md_inline(text: str) -> str:
     out = html.escape(text, quote=False)
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
     out = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", out)
-    out = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", r'<a href="\2">\1</a>', out)
+    out = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", _link, out)
     return out
 
 
@@ -144,6 +180,12 @@ def first_line(block) -> str:
             return re.sub(r"\s+", " ", line.strip())
     return ""
 
+
+SESSION_TITLES = {
+    "TRACE-task1.redacted.md": "Session 1 - Claude Code, building the collector",
+    "TRACE-task1-codex.redacted.md": "Session 2 - Codex, carrying it on",
+    "TRACE-task1-review.redacted.md": "Session 3 - Claude Code, review and hardening",
+}
 
 LABEL = {
     "human": ("Human", "the person"),
@@ -206,6 +248,40 @@ PAGE = """<!doctype html>
   details[open] summary::before{{content:"\\25be "}}
   details[open] summary{{margin-bottom:8px}}
   .peek{{font:12px var(--f-mono);color:var(--muted)}}
+
+  /* Machinery, listed rather than laid out. Most of a trace is ordinary shell;
+     as full blocks it buries the few things the person said. */
+  .msg.toolrun{{padding:10px 16px}}
+  ol.tools{{margin:0;padding:0;list-style:none}}
+  ol.tools li{{padding:2px 0;border-bottom:1px solid var(--grid)}}
+  ol.tools li:last-child{{border-bottom:0}}
+  ol.tools summary{{display:flex;gap:9px;align-items:baseline}}
+  ol.tools summary::before{{content:none}}
+  ol.tools .tick{{font:600 9.5px/1.8 var(--f-sans);letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 5px;flex:none}}
+  ol.tools li.tool_call .tick{{color:var(--accent);border-color:var(--accent)}}
+  ol.tools .peek{{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}}
+  ol.tools time{{margin-left:auto;font:10.5px var(--f-mono);color:var(--muted);flex:none}}
+  .deadpath{{font:11.5px var(--f-mono);color:var(--muted)}}
+
+  .partline{{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;
+    font-size:13px;font-weight:650;letter-spacing:-.01em;color:var(--ink);
+    margin:26px 0 10px;padding-bottom:7px;border-bottom:1px solid var(--line)}}
+  .partline:first-of-type{{margin-top:0}}
+  .partline span{{font-weight:400;font-size:12px;color:var(--muted)}}
+  .rail h3.part{{margin-top:14px;color:var(--ink)}}
+
+  /* As typed by default; the corrected reading is a switch, never a rewrite. */
+  .fixed{{display:none}}
+  body.corrected .asis{{display:none}}
+  body.corrected .fixed{{display:block}}
+  .reading{{display:flex;gap:9px;align-items:center;font-size:12px;color:var(--muted);
+    margin:0 0 18px}}
+  .reading button{{font:600 11px/1 var(--f-sans);letter-spacing:.05em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer;
+    border-radius:20px;padding:5px 10px}}
+  .reading button[aria-pressed="true"]{{background:var(--accent);border-color:var(--accent);
+    color:var(--on-accent)}}
 </style>
 <script src="i18n.js"></script>
 </head>
@@ -228,62 +304,196 @@ PAGE = """<!doctype html>
       <span><b>{calls}</b> <span data-i18n="trace.f.calls">tool calls</span></span>
       <span><b>{results}</b> <span data-i18n="trace.f.results">tool results</span></span>
     </div>
+    <div class="reading">
+      <span data-i18n="trace.reading">Reading</span>
+      <button type="button" data-reading="asis" aria-pressed="true"
+              data-i18n="trace.reading.asis">as typed</button>
+      <button type="button" data-reading="fixed" aria-pressed="false"
+              data-i18n="trace.reading.fixed">spelling corrected</button>
+      <span class="peek" data-i18n="trace.reading.note">the record is the verbatim file; this
+        only fixes typos in the human's own messages</span>
+    </div>
 {body}
     <footer data-i18n="trace.foot">{foot}</footer>
   </main>
 </div>
+<script>
+// The default is the record. Switching is a reading aid and says so.
+document.querySelectorAll("[data-reading]").forEach(function (button) {{
+  button.addEventListener("click", function () {{
+    var corrected = button.getAttribute("data-reading") === "fixed";
+    document.body.classList.toggle("corrected", corrected);
+    document.querySelectorAll("[data-reading]").forEach(function (other) {{
+      other.setAttribute("aria-pressed",
+        String(other.getAttribute("data-reading") === (corrected ? "fixed" : "asis")));
+    }});
+  }});
+}});
+</script>
 </body>
 </html>
 """
 
 
-def render(markdown_text: str, source_name: str) -> str:
+def apply_corrections(text: str, pairs) -> str:
+    """Spelling only, and only where the pair matches exactly once.
+
+    A pair that matches nothing is a correction that silently did not happen; a
+    pair that matches twice is a correction landing somewhere nobody checked.
+    Both raise rather than pass, because the whole value of offering a corrected
+    reading is that a reader can trust which characters moved.
+    """
+    for find, replace in pairs:
+        hits = text.count(find)
+        if hits != 1:
+            raise ValueError("correction matches {} times, expected exactly 1: {!r}".format(
+                hits, find[:70]))
+        text = text.replace(find, replace, 1)
+    return text
+
+
+def human_block(block, corrections) -> str:
+    """The human's words as typed, plus - if offered - a corrected reading.
+
+    The brief asks for the real conversation and says a hand-made trace tells
+    them nothing, so the verbatim text is what the page shows by default and
+    what the committed file contains. The corrected reading is a switch, built
+    from an explicit list of find/replace pairs that lives in the repository,
+    so which characters changed is auditable instead of buried in a rewritten
+    file.
+    """
+    verbatim = md_body(block["lines"])
+    pairs = corrections.get(str(block["n"])) if corrections else None
+    if not pairs:
+        return verbatim
+    raw = "\n".join(block["lines"])
+    fixed = md_body(apply_corrections(raw, pairs).splitlines())
+    return ('<div class="asis">{}</div><div class="fixed">{}</div>'.format(verbatim, fixed))
+
+
+def render_part(markdown_text: str, source_name: str, prefix: str, corrections=None):
+    """One session: its rail entries, its message blocks, its counts."""
     preamble, blocks = split_blocks(markdown_text)
     kinds = [classify(b) for b in blocks]
     rail, body = [], []
-    for block, kind in zip(blocks, kinds):
-        anchor = "m{}".format(block["n"])
+    index = 0
+    while index < len(blocks):
+        block, kind = blocks[index], kinds[index]
+        anchor = "{}m{}".format(prefix, block["n"])
+
+        # A run of machinery collapses into one numbered list. Most of this
+        # trace is ordinary shell, and rendered as full blocks it buries the
+        # handful of things the human said under thousands of lines of output.
+        # Every character is still here, one disclosure triangle away.
+        if kind in ("tool_call", "tool_result"):
+            run_start, rows = index, []
+            while index < len(blocks) and kinds[index] in ("tool_call", "tool_result"):
+                item, item_kind = blocks[index], kinds[index]
+                rows.append(
+                    '<li class="{}" id="{}m{}"><details><summary>'
+                    '<span class="tick">{}</span><span class="peek">{}</span>{}</summary>{}'
+                    '</details></li>'.format(
+                        item_kind, prefix, item["n"],
+                        "run" if item_kind == "tool_call" else "out",
+                        html.escape(first_line(item)[:120], quote=False),
+                        # The stamp travels with the row. Folding a block must not
+                        # drop what the block carried, and --verify says so.
+                        '<time>{}</time>'.format(html.escape(item["ts"])) if item["ts"] else "",
+                        md_body(item["lines"])))
+                index += 1
+            body.append(
+                '<section class="msg toolrun"><div class="who"><span class="n">{}&ndash;{}</span>'
+                '<span class="role">Tool activity</span><span>{} steps, folded</span></div>'
+                '<ol class="tools">{}</ol></section>'.format(
+                    blocks[run_start]["n"], blocks[index - 1]["n"], len(rows), "".join(rows)))
+            continue
+
         label, hint = LABEL[kind]
         stamp = '<time>{}</time>'.format(html.escape(block["ts"])) if block["ts"] else ""
         head = ('<div class="who"><span class="n">{}</span>'
                 '<span class="role">{}</span><span>{}</span>{}</div>').format(
                     block["n"], label, hint, stamp)
         content = md_body(block["lines"])
-        if kind in ("tool_result", "tool_call", "system"):
+        if kind == "system":
             peek = html.escape(first_line(block)[:110], quote=False)
             content = ("<details><summary><span class=\"peek\">{}</span></summary>{}</details>"
                        .format(peek or label, content))
+        elif kind == "human":
+            content = human_block(block, corrections)
         body.append('<section class="msg {}" id="{}">{}{}</section>'.format(kind, anchor, head, content))
         if kind == "human":
             rail.append('    <a href="#{}"><b>{}</b>{}</a>'.format(
                 anchor, block["n"], html.escape(first_line(block)[:96], quote=False)))
+        index += 1
 
+    return {
+        "rail": rail,
+        "body": body,
+        "preamble": preamble,
+        "source": source_name,
+        "total": len(blocks),
+        "humans": kinds.count("human"),
+        "assistants": kinds.count("assistant"),
+        "calls": kinds.count("tool_call"),
+        "results": kinds.count("tool_result"),
+    }
+
+
+def render(sources, corrections=None) -> str:
+    """One page, one session per part, in the order they were given.
+
+    The work ran across two harnesses. Splitting the trace across two files a
+    reader has to find separately would hide half of it; renumbering the two
+    into one sequence would misrepresent both. So each part keeps its own
+    numbering and says which session it is.
+    """
+    corrections = corrections or {}
+    parts = []
+    for position, (text, name) in enumerate(sources, start=1):
+        parts.append(render_part(text, name, "s{}".format(position),
+                                 corrections.get(name)))
+
+    rail, body = [], []
+    for position, part in enumerate(parts, start=1):
+        if len(parts) > 1:
+            title = SESSION_TITLES.get(part["source"], part["source"])
+            rail.append('    <h3 class="part">{}</h3>'.format(html.escape(title)))
+            body.append(
+                '<h2 class="partline" id="part{}">{}<span>{} messages &middot; {} from the human'
+                '</span></h2>'.format(position, html.escape(title), part["total"], part["humans"]))
+        rail.extend(part["rail"])
+        body.extend(part["body"])
+
+    total = sum(p["total"] for p in parts)
+    humans = sum(p["humans"] for p in parts)
+    links = " &middot; ".join(
+        '<a href="{}{}">{}</a>'.format(BLOB, html.escape(p["source"]), html.escape(p["source"]))
+        for p in parts)
     lede = (
-        'The real session, verbatim. This page only changes how it is laid out: nothing is '
-        'removed, reordered or reworded here. The transcript files tool results under the same '
-        '"user" role as the person, so they are labelled apart and folded shut - that is the '
-        'only reason this reads more easily than '
-        '<a href="https://github.com/AnastasiyaW/explee-spend-observability/blob/main/{src}">'
-        'the raw file</a>, which stays the artefact of record.'
-    ).format(src=html.escape(source_name))
+        'The real sessions, verbatim, in order. This page only changes how they are laid out: '
+        'nothing is removed, reordered or reworded. Tool results arrive under the same "user" '
+        'role as the person, so they are labelled apart and folded into lists - that, and '
+        'nothing else, is why this reads more easily than the files of record: {links}.'
+    ).format(links=links)
     foot = (
-        'Generated from <code>{src}</code> by '
-        '<a href="https://github.com/AnastasiyaW/explee-spend-observability/blob/main/render_trace.py">'
-        'render_trace.py</a>, which is in the repository and can be re-run against the same input. '
-        'The export itself, and the one bug that nearly lost most of the human’s messages, are '
-        'documented in the header of <code>export_trace.py</code>.'
-    ).format(src=html.escape(source_name))
-    if preamble:
-        foot += "<br><br>" + md_body(preamble.splitlines())
+        'Generated by <a href="{blob}render_trace.py">render_trace.py</a>, which is in the '
+        'repository and can be re-run against the same input; its <code>--verify</code> checks '
+        'that every non-empty source line survived the rendering. The export itself, and the bug '
+        'that nearly lost most of the human&rsquo;s messages, are documented in the header of '
+        '<code>export_trace.py</code>. Placeholders like <code>&lt;PRIVATE-4&gt;</code> are '
+        'per file: the same placeholder in two parts is not necessarily the same original.'
+    ).format(blob=BLOB)
+    for part in parts:
+        if part["preamble"]:
+            foot += "<br><br>" + md_body(part["preamble"].splitlines())
     return PAGE.format(
         rail="\n".join(rail) or '    <a href="#">no human messages found</a>',
         body="\n".join(body),
         lede=lede, foot=foot,
-        total=len(blocks),
-        humans=kinds.count("human"),
-        assistants=kinds.count("assistant"),
-        calls=kinds.count("tool_call"),
-        results=kinds.count("tool_result"),
+        total=total, humans=humans,
+        assistants=sum(p["assistants"] for p in parts),
+        calls=sum(p["calls"] for p in parts),
+        results=sum(p["results"] for p in parts),
     )
 
 
@@ -304,7 +514,7 @@ def self_test() -> int:
         failures.append("classification is {}".format(kinds))
     if "Preamble line." not in preamble:
         failures.append("the preamble was dropped")
-    page = render(sample, "T.md")
+    page = render([(sample, "T.md")])
     # The whole promise of this script is that it drops nothing.
     for needle in ("Hello", "welcome", "ls -la", "total 0", "Done, see"):
         if needle not in page:
@@ -313,14 +523,50 @@ def self_test() -> int:
         failures.append("raw markup from the transcript reached the page unescaped")
     if "&lt;b&gt;" not in page:
         failures.append("markup in a message was not escaped into visible text")
-    if page.count('class="msg') != 4:
-        failures.append("expected one section per message, got {}".format(page.count('class="msg')))
-    # A tool result must be folded, a human message must not be.
-    human_section = page.split('id="m1"')[1].split("</section>")[0]
+    # Three sections now: the human, the folded tool run, the closing answer.
+    if page.count('class="msg') != 3:
+        failures.append("expected three sections, got {}".format(page.count('class="msg')))
+    if 'class="msg toolrun"' not in page:
+        failures.append("the tool call and its result were not folded into one list")
+    human_section = page.split('id="s1m1"')[1].split("</section>")[0]
     if "<details>" in human_section:
         failures.append("a human message was folded shut")
-    if "<details>" not in page.split('id="m3"')[1].split("</section>")[0]:
-        failures.append("a tool result was not folded")
+
+    # A harness notification wearing the human's role is not the human.
+    harness = ("### 1 · User  \n\n<task-notification>\n<task-id>x</task-id>\n</task-notification>\n"
+               "\n### 2 · User  \n\nreal words\n")
+    kinds = [classify(b) for b in split_blocks(harness)[1]]
+    if kinds != ["system", "human"]:
+        failures.append("a task notification counted as a human message: {}".format(kinds))
+
+    # Corrections: exactly-once or it is an error, and both readings ship.
+    corrected = render([(sample, "T.md")], {"T.md": {"1": [["welcome", "welcome!"]]}})
+    if 'class="asis"' not in corrected or 'class="fixed"' not in corrected:
+        failures.append("the corrected reading was not rendered beside the verbatim one")
+    if "welcome!" not in corrected or "Hello" not in corrected:
+        failures.append("a correction did not reach the corrected reading")
+    for pairs, why in (([["nowhere", "x"]], "a pattern that matches nothing"),
+                       ([["l", "L"]], "a pattern that matches many times")):
+        try:
+            render([(sample, "T.md")], {"T.md": {"1": pairs}})
+            failures.append("silently accepted " + why)
+        except ValueError:
+            pass
+
+    # Two sessions render as two parts, each keeping its own numbering.
+    two = render([(sample, "TRACE-task1.redacted.md"), (sample, "TRACE-task1-codex.redacted.md")])
+    if two.count('class="partline"') != 2:
+        failures.append("two sources did not render as two parts")
+    if 'id="s2m1"' not in two:
+        failures.append("the second part's anchors collide with the first")
+
+    # A link to a file that is not in the repository must not ship as a link.
+    linked = render([("### 1 · User  \n\nsee [a](PROBLEMS.md) and [b](.claude/handoffs/x.md)\n",
+                      "T.md")])
+    if 'href="{}PROBLEMS.md"'.format(BLOB) not in linked:
+        failures.append("a repo-relative link was not resolved to a blob URL")
+    if "handoffs/x.md" in linked and 'href=".claude/handoffs/x.md"' in linked:
+        failures.append("a link to a file outside the repository shipped as a 404")
     if failures:
         print("SELF-TEST: FAIL")
         for item in failures:
@@ -371,7 +617,14 @@ def verify(markdown_text: str, page: str):
         # Outside a fence a link renders as its text; inside one it stays
         # literal. Either form counts as survived - the line is only lost if
         # neither appears.
-        forms = {_marks(line), _marks(re.sub(r"\[([^\]]+)\]\([^)\s]+\)", r"\1", line))}
+        # Three renderings a link can take: literal inside a fence, text only
+        # when it resolved to an anchor, and text plus target when it pointed
+        # outside the repository and kept the path visible instead of 404ing.
+        forms = {
+            _marks(line),
+            _marks(re.sub(r"\[([^\]]+)\]\([^)\s]+\)", r"\1", line)),
+            _marks(re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", r"\1 \2", line)),
+        }
         forms = {f for f in forms if len(f) >= 3}
         if not forms:
             continue
@@ -382,32 +635,48 @@ def verify(markdown_text: str, page: str):
 
 def main(argv) -> int:
     ap = argparse.ArgumentParser(description="Render a verbatim trace as one HTML page")
-    ap.add_argument("source", nargs="?", help="the TRACE markdown produced by export_trace.py")
+    ap.add_argument("sources", nargs="*",
+                    help="TRACE markdown files, in the order the sessions happened")
     ap.add_argument("-o", "--out", default="docs/trace.html")
+    ap.add_argument("--corrections", default="trace-corrections.json",
+                    help="spelling corrections offered as an alternative reading")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--verify", action="store_true",
                     help="after rendering, prove every source line survived")
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
-    if not args.source:
-        ap.error("a source file is required")
-    src = Path(args.source)
-    text = src.read_text(encoding="utf-8")
+    if not args.sources:
+        ap.error("at least one source file is required")
+
+    corrections = {}
+    corrections_path = Path(args.corrections)
+    if corrections_path.exists():
+        loaded = json.loads(corrections_path.read_text(encoding="utf-8"))
+        corrections = {k: v for k, v in loaded.items() if isinstance(v, dict)}
+
+    loaded_sources = []
+    for name in args.sources:
+        path = Path(name)
+        loaded_sources.append((path.read_text(encoding="utf-8"), path.name))
+
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    page = render(text, src.name)
+    page = render(loaded_sources, corrections)
     out.write_text(page, encoding="utf-8")
-    _, blocks = split_blocks(text)
-    kinds = [classify(b) for b in blocks]
-    print("{} -> {}  ({} messages, {} from the human)".format(
-        src, out, len(blocks), kinds.count("human")))
+    for text, name in loaded_sources:
+        kinds = [classify(b) for b in split_blocks(text)[1]]
+        print("{:<34} {:>4} messages, {:>3} from the human".format(
+            name, len(kinds), kinds.count("human")))
+    print("-> {}".format(out))
     if args.verify:
-        missing = verify(text, page)
+        missing = []
+        for text, name in loaded_sources:
+            missing.extend((name, line) for line in verify(text, page))
         if missing:
             print("VERIFY: FAIL - {} source line(s) did not survive rendering".format(len(missing)))
-            for line in missing[:10]:
-                print("  - " + line[:120])
+            for name, line in missing[:10]:
+                print("  - {}: {}".format(name, line[:110]))
             return 1
         print("VERIFY: PASS - every non-empty source line is present in the page")
     return 0
