@@ -348,7 +348,7 @@ Script completed
 Wall time 7.8 seconds
 Output:
 
-{"memory":"Exit code: 0\nWall time: 0.2 seconds\nOutput:\n1691:- for the program-only path, the user requested “минимально необходимых тестов”, research-backed unusual decisions, documented module responsibility/ownership, and no fake success -> keep the critical path narrow while preserving real external blocks and explicit evidence cells [Task 6]\n2771:- D:\\CODE_Claude, README.md overwrite, recovered-photo-composer-readme, .gitignore, worktree-audit, 82081 untracked, init.ps1, test_task_completion_hooks.py, plugin description, hook schema drift\n2795:- The concrete hook-schema drift was an official plugin hook JSON carrying a top-level `description`; `scripts/test_task_completion_hooks.py` now has to allow that string alongside `hooks` [Task 2]\n","hook":"Exit code: 0\nWall time: 0.3 seconds\nOutput:\n182-## Closure Audit\r\n183-\r\n184-- Primary request status: HANDOFF-NEAR-CONTEXT-LIMIT\r\n185-- Acceptance/checklist verified: official + community research, isolated runtime import, temporal shape check (`5 -> 5`, `6 -> 22`), and source-pinned fetch plan are durable; the actual H3 image smoke is not yet admissible until checksum completion.\r\n186-- Related/scope-adjacent tasks checked: Mage queue gate, H200 ownership/idle state, H3 model inventory, old shared Comfy and shared AI Toolkit isolation.\r\n187-- Unfinished related tasks: `docs/notes/2026-08-23-character-queue-forward-progress-and-minimax-h3-still-route.md` tracks H3 P1; encoder fetch and first smoke remain.\r\n188-- Why not continuing now: context limit forced handoff; an owned background fetch must finish before a valid GPU launch.\r\n189-\r\n190-## Background tasks (if any)\r\n191-\r\n192-- `<PRIVATE-46>` PID `616930` (`<REDACTED-21>/character-lora-h3-isolated-20260823/fetch.pid`) - downloads/verifies official BF16 H3 Comfy text encoder - active at last check; never start a second fetch or stop it.\r\n193-\r\n194-\r\n195-Other projects with recent handoffs (see INDEX.md):\r\n196-  - codex-auto: 130 handoff(s), latest 2026-08-23 12:17\r\n197:  - explee-test-task: 1 handoff(s), latest 2026-08-23 09:40\r\n198-  - <PRIVATE-70>-price-intelligence: 6 handoff(s), latest 2026-08-22 19:10\r\n199-  - ai-image-artifact-research: 1 handoff(s), latest 2026-08-22 10:53\r\n200-  - <PRIVATE-71>-news-system: 3 handoff(s), latest 2026-08-21 14:28\r\n201-  - release007-plugin-vm: 12 handoff(s), latest 2026-08-21 08:51\r\n202-  - <PRIVATE-59>-car-photo-site: 11 handoff(s
+{"memory":"Exit code: 0\nWall time: 0.2 seconds\nOutput:\n1691:- for the program-only path, the user requested “минимально необходимых тестов”, research-backed unusual decisions, documented module responsibility/ownership, and no fake success -> keep the critical path narrow while preserving real external blocks and explicit evidence cells [Task 6]\n2771:- D:\\<PRIVATE-DIR>, README.md overwrite, recovered-photo-composer-readme, .gitignore, worktree-audit, 82081 untracked, init.ps1, test_task_completion_hooks.py, plugin description, hook schema drift\n2795:- The concrete hook-schema drift was an official plugin hook JSON carrying a top-level `description`; `scripts/test_task_completion_hooks.py` now has to allow that string alongside `hooks` [Task 2]\n","hook":"Exit code: 0\nWall time: 0.3 seconds\nOutput:\n182-## Closure Audit\r\n183-\r\n184-- Primary request status: HANDOFF-NEAR-CONTEXT-LIMIT\r\n185-- Acceptance/checklist verified: official + community research, isolated runtime import, temporal shape check (`5 -> 5`, `6 -> 22`), and source-pinned fetch plan are durable; the actual H3 image smoke is not yet admissible until checksum completion.\r\n186-- Related/scope-adjacent tasks checked: Mage queue gate, H200 ownership/idle state, H3 model inventory, old shared Comfy and shared AI Toolkit isolation.\r\n187-- Unfinished related tasks: `docs/notes/2026-08-23-character-queue-forward-progress-and-minimax-h3-still-route.md` tracks H3 P1; encoder fetch and first smoke remain.\r\n188-- Why not continuing now: context limit forced handoff; an owned background fetch must finish before a valid GPU launch.\r\n189-\r\n190-## Background tasks (if any)\r\n191-\r\n192-- `<PRIVATE-46>` PID `616930` (`<REDACTED-21>/character-lora-h3-isolated-20260823/fetch.pid`) - downloads/verifies official BF16 H3 Comfy text encoder - active at last check; never start a second fetch or stop it.\r\n193-\r\n194-\r\n195-Other projects with recent handoffs (see INDEX.md):\r\n196-  - codex-auto: 130 handoff(s), latest 2026-08-23 12:17\r\n197:  - explee-test-task: 1 handoff(s), latest 2026-08-23 09:40\r\n198-  - <PRIVATE-70>-price-intelligence: 6 handoff(s), latest 2026-08-22 19:10\r\n199-  - ai-image-artifact-research: 1 handoff(s), latest 2026-08-22 10:53\r\n200-  - <PRIVATE-71>-news-system: 3 handoff(s), latest 2026-08-21 14:28\r\n201-  - release007-plugin-vm: 12 handoff(s), latest 2026-08-21 08:51\r\n202-  - <PRIVATE-59>-car-photo-site: 11 handoff(s
 ... [1165 more characters]
 ```
 
@@ -9767,7 +9767,7 @@ Exit code: 0
 Wall time: 9.4 seconds
 Total output lines: 151
 Output:
-.claude\handoffs\car-dataset-kuzov\2026-07-01_16-45_f9f6d992.md:22:- **RunPod pod launched** on the <PRIVATE-70> account (`RUNPOD_API_KEY_<PRIVATE-70>`) for training: pod id `u89rfdp6760ouh`, RTX A5000 24GB, $0.16/hr, SSH `root@<REDACTED-28> -p 10071` (my `~/.ssh/id_ed25519` key injected via `PUBLIC_KEY` env at creation -- required for REST/GraphQL-created pods, web UI would've done it automatically). <PRIVATE-63>'s own key was appended to the pod's `authorized_keys` too, for direct <PRIVATE-63>-to-pod transfers.
+.claude\handoffs\car-dataset-kuzov\2026-07-01_16-45_f9f6d992.md:22:- **RunPod pod launched** on the <PRIVATE-70> account (`RUNPOD_API_KEY_<PRIVATE-70>`) for training: pod id `u89rfdp6760ouh`, RTX A5000 24GB, $0.16/hr, SSH `root@<REDACTED-28> -p 10071` (my `<REDACTED-KEY-PATH>` key injected via `PUBLIC_KEY` env at creation -- required for REST/GraphQL-created pods, web UI would've done it automatically). <PRIVATE-63>'s own key was appended to the pod's `authorized_keys` too, for direct <PRIVATE-63>-to-pod transfers.
 .claude\handoffs\car-dataset-kuzov\2026-07-01_16-45_f9f6d992.md:30:- `--bs 256` (matching train_chassis.py's DINOv2 batch size) OOM'd on the A5000 24GB with DINOv3 ViT-L -- DINOv3-L is heavier per-sample than DINOv2-L. Reduced to `--bs 64` (works, room to spare) for the real run.
 .claude\handoffs\explee-test-task\2026-08-23_11-15_82ec009b.md:44:- **small <PRIVATE-70> unreachable** on all 3 routes (tailscale/pub timeout, rev refused)
 .claude\handoffs\character_lora_research_and_runbook_20260817.md:60:   the practical training resolution.  The base download is roughly 124 GB and belongs on Small.
@@ -11341,7 +11341,7 @@ Host <PRIVATE-4> <PRIVATE-63>
     HostName <REDACTED-10>
     Port 22
     User root
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile <REDACTED-KEY-PATH>
 Host <PRIVATE-12>
     HostName <PRIVATE-85>
     User root
@@ -11349,15 +11349,15 @@ Host <PRIVATE-12>
 Host <PRIVATE-46>
     HostName <REDACTED-31>
     User administrator
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile <REDACTED-KEY-PATH>
 Host <PRIVATE-18>
     HostName <PRIVATE-52>
     Port 2223
     User administrator
-    IdentityFile ~/.ssh/id_ed25519
+    IdentityFile <REDACTED-KEY-PATH>
 == docs route ==
 .claude\handoffs\nemotron-agent-serving\2026-08-13_13-25_482060ef.md:92:Move the weights from `/mnt/small-E` to local disk once <PRIVATE-46> has room — it turns a
-.claude\handoffs\gen-models-2026-08\2026-08-19_12-55_b1878942.md:57:- Fetch жив на `<PRIVATE-46>`, лог `/mnt/small-G/models/generative-h200-20260816/_fetch-logs/fetch_v3.log`.
+.claude\handoffs\gen-models-2026-08\2026-08-19_12-55_b1878942.md:57:- Fetch жив на `<PRIVATE-46>`, лог `/mnt/small-G/models/generative-<PRIVATE-GPU-HOST>/_fetch-logs/fetch_v3.log`.
 .claude\handoffs\explee-test-task\2026-08-23_11-15_82ec009b.md:45:  2026-08-23. White PC reachable (RDP 6589; LAN <REDACTED-30> has OpenSSH) but not
 .claude\handoffs\<PRIVATE-70>-storage-catalog\2026-08-22_20-43_019fe6dc.md:17:- Small `<PRIVATE-93>` is reachable from Big directly at `<REDACTED-30>`; Windows
 .claude\handoffs\<PRIVATE-70>-storage-catalog\2026-08-13_20-24_019fe6dc.md:11:- Destination: Small `F:\bigserver\from-bigserver\scraped-full\online-stores\sunlight` through direct LAN SFTP `<REDACTED-32> -> <REDACTED-30>:22`.
