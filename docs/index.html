@@ -70,7 +70,8 @@
 
   <a class="card soon" href="stt.html" id="stt-card">
     <div class="row"><span class="tag">Task 2</span><h2>Picking a transcriber</h2></div>
-    <p>Six engines on one hour of Russian speech with dense English IT terms.
+    <p>Seven model variants across five independent STT families, on one hour of
+       Russian speech with dense English IT terms.
        The metric is the deliverable: word error rate is the wrong primary score
        for this audio, and the report explains why with numbers.</p>
     <div class="live" id="live-stt">running — results land here</div>
@@ -139,7 +140,7 @@ fetch("stt.html", {method:"HEAD"}).then(r => {
   if (r.ok){
     const card = document.getElementById("stt-card");
     card.classList.remove("soon");
-    document.getElementById("live-stt").textContent = "six engines, one hour of audio — report published";
+    document.getElementById("live-stt").textContent = "five engine families, seven variants, one hour — report published";
   }
 }).catch(() => {});
 </script>

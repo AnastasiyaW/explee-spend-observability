@@ -1,20 +1,13 @@
-"""Does the rewritten self-test actually bite?
-
-Each mutant reintroduces one defect the independent verifier found. A mutant
-that SURVIVES means the suite is blind to that defect - which is what the
-previous suite was for three of five.
-"""
+"""Prove the monitor self-test rejects the defects it claims to cover."""
 import io
 import pathlib
-import shutil
-import tempfile
 import subprocess
 import sys
+import tempfile
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
 
 SRC = pathlib.Path(__file__).with_name("spend_monitor.py")
-WORK = pathlib.Path(tempfile.gettempdir()) / "spend_monitor_mutant.py"
 
 MUTANTS = [
     ("M1 rate ignores flat time (the shipped 3x bug)",
@@ -43,24 +36,54 @@ MUTANTS = [
     ("M8 empty-body at HTTP 200 treated as fine",
      "        if streak < STALE_FAILURES:\n            return",
      "        if True:\n            return"),
+    ("M9 incomplete meta accepted",
+     'if not isinstance(meta, dict) or "world_epoch" not in meta or "fingerprint" not in meta:',
+     'if not isinstance(meta, dict) or "world_epoch" not in meta:'),
+    ("M10 snapshot provider discovery crosses worlds",
+     '"SELECT DISTINCT provider FROM samples WHERE world_epoch IS ? AND fingerprint IS ?"',
+     '"SELECT DISTINCT provider FROM samples"'),
+    ("M11 invalid responses clear provider backoff",
+     '        if record["ok"]:\n            self.backoff.pop(provider, None)',
+     '        if True:\n            self.backoff.pop(provider, None)'),
+    ("M12 shape history crosses stand worlds",
+     '        "AND world_epoch IS ? AND fingerprint IS ?",\n        (provider, world.get("world_epoch"), world.get("fingerprint"))).fetchall()}',
+     '        "",\n        (provider,)).fetchall()}'),
 ]
 
-source = SRC.read_text(encoding="utf-8")
-survivors = 0
-for name, old, new in MUTANTS:
-    if old not in source:
-        print("  {:<52} ANCHOR MISSING - mutation not applied".format(name))
-        survivors += 1
-        continue
-    WORK.write_text(source.replace(old, new, 1), encoding="utf-8")
-    proc = subprocess.run([sys.executable, str(WORK), "--self-test"],
-                          capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", timeout=300)
-    passed = "SELF-TEST: PASS" in (proc.stdout or "")
-    if passed:
-        survivors += 1
-    print("  {:<52} {}".format(name, "SURVIVED - suite is blind here" if passed else "killed"))
 
-print()
-print("{} of {} mutants killed".format(len(MUTANTS) - survivors, len(MUTANTS)))
-shutil.rmtree(WORK, ignore_errors=True) if WORK.is_dir() else WORK.unlink(missing_ok=True)
+def run(command):
+    return subprocess.run(command, capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", timeout=300)
+
+
+def main() -> int:
+    baseline = run([sys.executable, str(SRC), "--self-test"])
+    if baseline.returncode != 0 or "SELF-TEST: PASS" not in baseline.stdout:
+        print("BASELINE FAILED; refusing to score mutants")
+        print((baseline.stdout + baseline.stderr).strip())
+        return 1
+
+    source = SRC.read_text(encoding="utf-8")
+    survivors = 0
+    with tempfile.TemporaryDirectory(prefix="spend_monitor_mutants_") as directory:
+        work = pathlib.Path(directory) / "spend_monitor_mutant.py"
+        for name, old, new in MUTANTS:
+            if old not in source:
+                print("  {:<52} ANCHOR MISSING - mutation not applied".format(name))
+                survivors += 1
+                continue
+            work.write_text(source.replace(old, new, 1), encoding="utf-8")
+            proc = run([sys.executable, str(work), "--self-test"])
+            survived = proc.returncode == 0 and "SELF-TEST: PASS" in proc.stdout
+            if survived:
+                survivors += 1
+            print("  {:<52} {}".format(
+                name, "SURVIVED - suite is blind here" if survived else "killed"))
+
+    print()
+    print("{} of {} mutants killed".format(len(MUTANTS) - survivors, len(MUTANTS)))
+    return 1 if survivors else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "mode": "continuation",
+  "project": "explee-spend-observability",
+  "goal": "Review and finish the deployed Task 1 release without losing the already-running collector or falsifying its evidence.",
+  "baseline": {
+    "repo_root": "<workspace>/explee-test",
+    "branch": "main",
+    "head": "1e406da",
+    "preexisting_paths": ["spend_monitor.py"]
+  },
+  "scope": {
+    "enforce": true,
+    "protect_unlisted": true,
+    "files": [
+      ".claude/continuity/CONTINUITY.json",
+      ".claude/public-identifiers.allow.txt",
+      ".gitignore",
+      "BACKLOG.md",
+      "spend_monitor.py",
+      "deploy_remote.sh",
+      "mutation_test.py",
+      "README.md",
+      "docs/index.html",
+      "docs/spend.html",
+      "docs/stand.html",
+      "docs/stt.html",
+      "docs/reviews/2026-08-23-deep-review.md",
+      "task3-distill-feedback.md"
+    ]
+  },
+  "preserve": [
+    "The live collector remains outbound-only and keeps accumulating history while review runs.",
+    "USD, GBP and credits are not added; runway hours remain the only cross-provider ordering.",
+    "History stays keyed by stand world_epoch and fingerprint, and injected faults remain unknown rather than zero.",
+    "The real trace is redacted by substitution, never rewritten or shortened."
+  ],
+  "do_not_redo": [
+    "Do not replace the collector architecture or restart the service unless a focused check proves the deployed process must change.",
+    "Do not discard the pre-existing api_stats change; the deployed VPS already runs it, so review and reconcile it with Git.",
+    "Do not invent a company-wide total across incompatible units."
+  ],
+  "review_decisions": [
+    "Fix current-world scoping, complete-world admission, deploy atomicity, mutation-gate truthfulness, snapshot atomicity and bounded retry behavior before the next deploy.",
+    "Defer automatic sample deletion: retention would delete recorded evidence and requires an explicit user retention decision; current test-duration storage is not exhausted."
+  ],
+  "replan": {
+    "active": true,
+    "reason": "The user asked to continue the whole test after the focused Task 1 review, so the already-frozen Task 3 artifact branch is now part of this continuation.",
+    "preserve": [
+      "Task 3 remains exactly one harness artifact with a three-line location and purpose note.",
+      "The artifact must be a real used workflow selected on measured evidence rather than a newly invented showcase."
+    ]
+  },
+  "verification": [
+    {"command": "python spend_monitor.py --self-test", "status": "passed", "evidence": "SELF-TEST: PASS"},
+    {"command": "python mutation_test.py", "status": "passed", "evidence": "12 of 12 mutants killed; exit 0, including cross-world shape history"},
+    {"command": "ssh <monitor-host> 'systemctl --user is-active explee-monitor.service; cd ~/explee-monitor && python3 spend_monitor.py stats'", "status": "pending", "evidence": "baseline service was active, but fresh verifier proved live source still predates the reviewed world-scoping fix; deploy and live parity check required"}
+  ]
+}

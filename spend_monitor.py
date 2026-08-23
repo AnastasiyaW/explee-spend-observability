@@ -42,6 +42,7 @@ import random
 import sqlite3
 import statistics
 import sys
+import tempfile
 import threading
 import time
 import urllib.error
@@ -319,6 +320,9 @@ CREATE TABLE IF NOT EXISTS samples (
   spend_24h REAL, spend_30d REAL, refresh TEXT, shape TEXT, error TEXT, raw TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_samples_provider_ts ON samples(provider, ts);
+CREATE INDEX IF NOT EXISTS idx_samples_ts ON samples(ts);
+CREATE INDEX IF NOT EXISTS idx_samples_world_provider_ts
+  ON samples(world_epoch, fingerprint, provider, ts);
 CREATE TABLE IF NOT EXISTS alert_state (
   key TEXT PRIMARY KEY, last_ts REAL, last_level TEXT, fired INTEGER DEFAULT 0
 );
@@ -336,6 +340,52 @@ def connect(path: Path = DB_PATH) -> sqlite3.Connection:
     # WAL so a snapshot read never blocks the writer during a long run.
     conn.execute("PRAGMA journal_mode=WAL")
     return conn
+
+
+class CollectorLock:
+    """Nonblocking, advisory ownership for one mutating collector per database."""
+    def __init__(self, path: Path):
+        self.path = Path(path)
+        self.handle = None
+
+    def acquire(self) -> bool:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.handle = self.path.open("a+b")
+        if self.path.stat().st_size == 0:
+            self.handle.write(b"0")
+            self.handle.flush()
+        try:
+            self.handle.seek(0)
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(self.handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            self.handle.close()
+            self.handle = None
+            return False
+        self.handle.seek(0)
+        self.handle.write(str(os.getpid()).encode("ascii"))
+        self.handle.truncate()
+        self.handle.flush()
+        return True
+
+    def release(self) -> None:
+        if self.handle is None:
+            return
+        try:
+            self.handle.seek(0)
+            if os.name == "nt":
+                import msvcrt
+                msvcrt.locking(self.handle.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(self.handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            self.handle.close()
+            self.handle = None
 
 
 # ---------------------------------------------------------------------------
@@ -489,6 +539,13 @@ def topups(conn, provider, since, world: dict):
     rows = _readings(conn, provider, since, world)
     return [(cur["ts"], cur["value"] - prev["value"])
             for prev, cur in zip(rows, rows[1:]) if cur["value"] > prev["value"]]
+
+
+def seen_shapes(conn, provider: str, world: dict) -> set:
+    return {row["shape"] for row in conn.execute(
+        "SELECT DISTINCT shape FROM samples WHERE provider=? AND ok=1 AND shape IS NOT NULL "
+        "AND world_epoch IS ? AND fingerprint IS ?",
+        (provider, world.get("world_epoch"), world.get("fingerprint"))).fetchall()}
 
 
 class Analyzer:
@@ -694,29 +751,40 @@ class Analyzer:
 class Monitor:
     def __init__(self, base=BASE, db=DB_PATH, once=False):
         self.base = base.rstrip("/")
+        self.db_path = Path(db)
         self.conn = connect(db)
         self.alerter = Alerter(self.conn)
         self.analyzer = Analyzer(self.conn, self.alerter)
         self.catalog = {}
         self.catalog_ts = 0.0
+        self.catalog_next_attempt = 0.0
+        self.catalog_backoff = 0.0
         self.world = {"world_epoch": None, "fingerprint": None}
         self.backoff = {}
         self.once = once
         self.stop = threading.Event()
 
     # -- stand plumbing ---------------------------------------------------
+    def _catalog_retry(self):
+        self.catalog_backoff = min(
+            MAX_BACKOFF_SEC, max(30.0, (self.catalog_backoff or 15.0) * 2))
+        self.catalog_next_attempt = now() + self.catalog_backoff
+
     def refresh_catalog(self):
         status, body, _, err = http_get(self.base + "/providers")
         if err or status != 200:
             print("catalog unavailable: {} {}".format(status, err), file=sys.stderr, flush=True)
-            return
+            self._catalog_retry()
+            return False
         try:
             entries = json.loads(body)
         except json.JSONDecodeError:
             print("catalog is not json", file=sys.stderr, flush=True)
-            return
+            self._catalog_retry()
+            return False
         if not isinstance(entries, list):
-            return
+            self._catalog_retry()
+            return False
         seen = {}
         for entry in entries:
             if not isinstance(entry, dict):
@@ -728,7 +796,8 @@ class Monitor:
             if isinstance(pid, str) and pid:
                 seen[pid] = entry
         if not seen:
-            return
+            self._catalog_retry()
+            return False
         gone = set(self.catalog) - set(seen)
         added = set(seen) - set(self.catalog)
         if self.catalog and (gone or added):
@@ -740,21 +809,32 @@ class Monitor:
                 added=sorted(added), removed=sorted(gone))
         self.catalog = seen
         self.catalog_ts = now()
+        self.catalog_backoff = 0.0
+        self.catalog_next_attempt = self.catalog_ts + CATALOG_REFRESH_SEC
+        return True
+
+    def has_complete_world(self):
+        return self.world.get("world_epoch") is not None and bool(self.world.get("fingerprint"))
 
     def refresh_meta(self):
         status, body, _, err = http_get(self.base + "/meta")
         if err or status != 200:
-            return
+            return False
         try:
             meta = json.loads(body)
         except json.JSONDecodeError:
-            return
-        epoch, fingerprint = meta.get("world_epoch"), meta.get("fingerprint")
-        if epoch is None and fingerprint is None:
-            return
+            return False
+        if not isinstance(meta, dict) or "world_epoch" not in meta or "fingerprint" not in meta:
+            return False
+        try:
+            epoch = float(meta["world_epoch"])
+        except (TypeError, ValueError):
+            return False
+        fingerprint = meta["fingerprint"]
+        if not isinstance(fingerprint, str) or not fingerprint:
+            return False
         previous = dict(self.world)
-        self.world = {"world_epoch": float(epoch) if epoch is not None else None,
-                      "fingerprint": str(fingerprint) if fingerprint else None}
+        self.world = {"world_epoch": epoch, "fingerprint": fingerprint}
         if previous["fingerprint"] and previous != self.world:
             self.alerter.fire(
                 "world:reset", "critical", "",
@@ -769,34 +849,34 @@ class Monitor:
             "INSERT OR IGNORE INTO worlds(first_seen, world_epoch, fingerprint) VALUES(?,?,?)",
             (now(), self.world["world_epoch"], self.world["fingerprint"]))
         self.conn.commit()
+        return True
 
     # -- one provider -----------------------------------------------------
     def poll(self, provider):
+        if not self.has_complete_world():
+            raise RuntimeError("refusing to poll without a complete world identity")
         entry = self.catalog.get(provider, {})
         status, body, latency, err = http_get("{}/{}/balance".format(self.base, provider))
 
-        if status == 429:
-            # Honour the rate limit rather than hammering: tremendous answered
-            # 429 on the very first sequential sweep of all fifteen.
-            wait = min(MAX_BACKOFF_SEC, max(30.0, self.backoff.get(provider, 15.0) * 2))
-            self.backoff[provider] = wait
-            record = {"ok": False, "error": "rate limited (429)", "model": entry.get("pay_model"),
-                      "unit": entry.get("unit"), "value": None, "capacity": None,
-                      "spend_24h": None, "spend_30d": None, "refresh": None, "shape": "429"}
-        elif err and status is None:
-            self.backoff[provider] = min(MAX_BACKOFF_SEC, max(10.0, self.backoff.get(provider, 5.0) * 2))
-            record = {"ok": False, "error": err, "model": entry.get("pay_model"),
-                      "unit": entry.get("unit"), "value": None, "capacity": None,
-                      "spend_24h": None, "spend_30d": None, "refresh": None, "shape": None}
-        else:
-            self.backoff.pop(provider, None)
+        if status == 200 and not err:
             record = normalize(body, entry.get("pay_model"), entry.get("unit"))
+        else:
+            error = "rate limited (429)" if status == 429 else (err or "http {}".format(status))
+            record = {"ok": False, "error": error, "model": entry.get("pay_model"),
+                      "unit": entry.get("unit"), "value": None, "capacity": None,
+                      "spend_24h": None, "spend_30d": None, "refresh": None,
+                      "shape": "http-{}".format(status) if status is not None else None}
+
+        if record["ok"]:
+            self.backoff.pop(provider, None)
+        else:
+            floor = 30.0 if status == 429 else 10.0
+            self.backoff[provider] = min(
+                MAX_BACKOFF_SEC, max(floor, self.backoff.get(provider, floor / 2) * 2))
 
         # Read the shapes seen so far BEFORE storing this one, or the comparison
         # finds the row it just wrote and no change is ever visible.
-        shape_history = {r["shape"] for r in self.conn.execute(
-            "SELECT DISTINCT shape FROM samples WHERE provider=? AND ok=1 AND shape IS NOT NULL",
-            (provider,)).fetchall()}
+        shape_history = seen_shapes(self.conn, provider, self.world)
 
         self.conn.execute(
             "INSERT INTO samples(ts,world_epoch,fingerprint,provider,ok,http_status,latency_ms,"
@@ -811,13 +891,28 @@ class Monitor:
 
     # -- loop -------------------------------------------------------------
     def run(self):
+        guard = CollectorLock(self.db_path.with_name(self.db_path.name + ".collector.lock"))
+        if not guard.acquire():
+            print("collector already running (lock: {})".format(guard.path), file=sys.stderr, flush=True)
+            return 1
+        try:
+            return self._run()
+        finally:
+            guard.release()
+
+    def _run(self):
+        if not self.refresh_meta():
+            print("world identity unavailable; not polling", file=sys.stderr, flush=True)
+            return 2
         self.refresh_catalog()
-        self.refresh_meta()
-        if not self.catalog:
+        if not self.catalog and self.once:
             print("no catalog; nothing to watch", file=sys.stderr)
             return 2
-        print("watching {} providers every {:.0f}s, world {}".format(
-            len(self.catalog), POLL_INTERVAL, self.world.get("fingerprint")), flush=True)
+        if self.catalog:
+            print("watching {} providers every {:.0f}s, world {}".format(
+                len(self.catalog), POLL_INTERVAL, self.world.get("fingerprint")), flush=True)
+        else:
+            print("catalog unavailable; retrying on its bounded schedule", file=sys.stderr, flush=True)
 
         if self.once:
             for provider in sorted(self.catalog):
@@ -842,7 +937,7 @@ class Monitor:
             if current >= next_meta:
                 self.refresh_meta()
                 next_meta = current + META_INTERVAL_SEC
-            if current - self.catalog_ts > CATALOG_REFRESH_SEC:
+            if current >= self.catalog_next_attempt:
                 self.refresh_catalog()
                 for provider in self.catalog:
                     next_due.setdefault(provider, current)
@@ -876,18 +971,68 @@ class Monitor:
 # ---------------------------------------------------------------------------
 # snapshot for the dashboard
 # ---------------------------------------------------------------------------
+def api_stats(conn, window=None) -> dict:
+    """How the third party actually behaved, from our own reads.
+
+    The task says the stand behaves like a real service rather than a toy, so
+    how it misbehaves is itself a measurement worth keeping. Every read already
+    stored its status, error and latency; this only surfaces them.
+    """
+    since = now() - (window or 24 * 3600)
+    rows = conn.execute(
+        "SELECT provider, ok, http_status, error, latency_ms FROM samples WHERE ts>=?",
+        (since,)).fetchall()
+    if not rows:
+        return {}
+    total = len(rows)
+    good = sum(1 for r in rows if r["ok"])
+    faults, per_provider = {}, {}
+    for row in rows:
+        stats = per_provider.setdefault(row["provider"], {"reads": 0, "failed": 0})
+        stats["reads"] += 1
+        if row["ok"]:
+            continue
+        stats["failed"] += 1
+        key = "{} {}".format(row["http_status"] or "-", (row["error"] or "unknown")[:40])
+        entry = faults.setdefault(key, {"count": 0, "providers": set()})
+        entry["count"] += 1
+        entry["providers"].add(row["provider"])
+    latencies = sorted(r["latency_ms"] for r in rows if r["latency_ms"] is not None)
+
+    def pct(p):
+        return round(latencies[min(len(latencies) - 1, int(len(latencies) * p))], 1) if latencies else None
+
+    for stats in per_provider.values():
+        stats["failure_pct"] = round(100.0 * stats["failed"] / stats["reads"], 1)
+    return {
+        "reads": total,
+        "ok": good,
+        "failed": total - good,
+        "success_pct": round(100.0 * good / total, 2),
+        "latency_ms": {"p50": pct(0.5), "p95": pct(0.95),
+                       "max": round(latencies[-1], 1) if latencies else None},
+        "faults": sorted(
+            ({"kind": k, "count": v["count"], "providers": len(v["providers"])}
+             for k, v in faults.items()), key=lambda f: -f["count"]),
+        "per_provider": dict(sorted(per_provider.items(), key=lambda kv: -kv[1]["failure_pct"])),
+    }
+
+
 def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = None):
     alerts_path = alerts_path or ALERTS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     providers = []
-    rows = conn.execute("SELECT DISTINCT provider FROM samples").fetchall()
+    identity = (world.get("world_epoch"), world.get("fingerprint"))
+    rows = conn.execute(
+        "SELECT DISTINCT provider FROM samples WHERE world_epoch IS ? AND fingerprint IS ?", identity).fetchall()
     for row in rows:
         provider = row["provider"]
         last = conn.execute(
-            "SELECT * FROM samples WHERE provider=? ORDER BY ts DESC LIMIT 1", (provider,)).fetchone()
+            "SELECT * FROM samples WHERE provider=? AND world_epoch IS ? AND fingerprint IS ? "
+            "ORDER BY ts DESC LIMIT 1", (provider, *identity)).fetchone()
         last_ok = conn.execute(
-            "SELECT * FROM samples WHERE provider=? AND ok=1 ORDER BY ts DESC LIMIT 1",
-            (provider,)).fetchone()
+            "SELECT * FROM samples WHERE provider=? AND ok=1 AND world_epoch IS ? AND fingerprint IS ? "
+            "ORDER BY ts DESC LIMIT 1", (provider, *identity)).fetchone()
         median, buckets = baseline_rate(conn, provider, world)
         recent_burn = spend_rate(conn, provider, now() - BURN_WINDOW_SEC, world) or 0.0
         samples_seen = reading_count(conn, provider, world)
@@ -896,8 +1041,9 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
             # reports them as having no data at all. They are being read; they
             # just have nothing a balance column can hold.
             samples_seen = conn.execute(
-                "SELECT count(*) FROM samples WHERE provider=? AND ok=1 AND ts>=?",
-                (provider, now() - BASELINE_WINDOW_SEC)).fetchone()[0]
+                "SELECT count(*) FROM samples WHERE provider=? AND ok=1 AND ts>=? "
+                "AND world_epoch IS ? AND fingerprint IS ?",
+                (provider, now() - BASELINE_WINDOW_SEC, *identity)).fetchone()[0]
         warm = reading_count(conn, provider, world) >= WARMUP_BURN_SAMPLES and buckets >= 3
         value = last_ok["value"] if last_ok else None
         rate = median or recent_burn
@@ -906,7 +1052,8 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
         runway = (value / rate) if (warm and rate and value and value > 0) else None
         series = conn.execute(
             "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
-            "AND ts>=? ORDER BY ts", (provider, now() - 6 * 3600)).fetchall()
+            "AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts",
+            (provider, now() - 6 * 3600, *identity)).fetchall()
         providers.append({
             "provider": provider,
             "model": last_ok["model"] if last_ok else (last["model"] if last else None),
@@ -941,14 +1088,25 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
     payload = {
         "generated": iso(now()),
         "world": world,
+        "api": api_stats(conn),
         "window_note": "runway uses the median burn over the last {:.0f}h; increases are treated as "
                        "top-ups and never enter the baseline".format(BASELINE_WINDOW_SEC / 3600),
         "providers": providers,
         "alerts": list(reversed(alerts)),
     }
-    tmp = path.with_suffix(".tmp")
-    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
-    tmp.replace(path)
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", delete=False,
+                                         dir=str(path.parent), prefix=".{}.{}.".format(path.name, os.getpid()),
+                                         suffix=".tmp") as handle:
+            tmp_path = Path(handle.name)
+            json.dump(payload, handle, ensure_ascii=False, indent=1)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path is not None and tmp_path.exists():
+            tmp_path.unlink()
     return payload
 
 
@@ -966,13 +1124,39 @@ def self_test() -> int:
         analyzer = Analyzer(conn, alerter)
         world = {"world_epoch": 1.0, "fingerprint": "aaa"}
 
-        def insert(provider, ts, value, ok=1, model="prepaid_balance", **kw):
+        def insert(provider, ts, value, ok=1, model="prepaid_balance", world_key=world, **kw):
             conn.execute(
-                "INSERT INTO samples(ts,world_epoch,fingerprint,provider,ok,model,unit,value,"
-                "capacity,spend_24h,refresh) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (ts, 1.0, "aaa", provider, ok, model, kw.get("unit", "usd"), value,
-                 kw.get("capacity"), kw.get("spend_24h"), kw.get("refresh")))
+                "INSERT INTO samples(ts,world_epoch,fingerprint,provider,ok,http_status,latency_ms,"
+                "model,unit,value,capacity,spend_24h,refresh,error,shape) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (ts, world_key["world_epoch"], world_key["fingerprint"], provider, ok,
+                 kw.get("http_status"), kw.get("latency_ms"), model, kw.get("unit", "usd"), value,
+                 kw.get("capacity"), kw.get("spend_24h"), kw.get("refresh"), kw.get("error"),
+                 kw.get("shape")))
             conn.commit()
+
+        # --- API statistics describe recorded reads, including failures ------
+        insert("api-ok", now() - 2, 10.0, http_status=200, latency_ms=3.0)
+        insert("api-failed", now() - 1, None, ok=0, http_status=429, latency_ms=5.0,
+               error="rate limited")
+        stats = api_stats(conn, window=60)
+        if (stats.get("reads"), stats.get("ok"), stats.get("failed")) != (2, 1, 1):
+            failures.append("api_stats did not count successful and failed reads: {}".format(stats))
+        elif stats["per_provider"].get("api-failed", {}).get("failure_pct") != 100.0:
+            failures.append("api_stats did not attribute a provider failure")
+        elif not any(f["kind"].startswith("429 rate limited") for f in stats["faults"]):
+            failures.append("api_stats did not retain the HTTP failure kind")
+
+        # --- one active collector owns mutations, on Windows and Linux -------
+        lock_path = root / "collector.lock"
+        first_lock, second_lock = CollectorLock(lock_path), CollectorLock(lock_path)
+        if not first_lock.acquire() or second_lock.acquire():
+            failures.append("collector lock did not reject a concurrent writer")
+        first_lock.release()
+        second_lock.release()
+        retry_lock = CollectorLock(lock_path)
+        if not retry_lock.acquire():
+            failures.append("collector lock was not released after its owner exited")
+        retry_lock.release()
 
         # --- shape parsing, against the six shapes actually observed --------
         # Every body below is a VERBATIM response captured from the live stand
@@ -1012,6 +1196,72 @@ def self_test() -> int:
         if not changed["ok"] or changed["value"] != 12.5:
             failures.append("fallback did not survive an unseen shape")
 
+        # Shape history is a property of one stand world.  Shapes from a prior
+        # replay must not suppress the first real schema-change alert now.
+        prior = {"world_epoch": 0.0, "fingerprint": "prior-shapes"}
+        insert("shape-scope", now() - 30, 1.0, world_key=prior, shape="shape-a")
+        insert("shape-scope", now() - 20, 2.0, world_key=prior, shape="shape-b")
+        insert("shape-scope", now() - 10, 3.0, shape="shape-a")
+        current_shapes = seen_shapes(conn, "shape-scope", world)
+        if current_shapes != {"shape-a"}:
+            failures.append("shape history crossed stand worlds: {}".format(current_shapes))
+        # An incomplete /meta may not create a NULL-world series. Later
+        # transient failures keep the last complete identity rather than erasing it.
+        meta_monitor = Monitor.__new__(Monitor)
+        meta_monitor.base, meta_monitor.conn = "http://meta.test", conn
+        meta_monitor.alerter, meta_monitor.analyzer = alerter, analyzer
+        meta_monitor.world = {"world_epoch": None, "fingerprint": None}
+        meta_replies = iter([
+            (200, '{"world_epoch": 3.0}', 1.0, None),
+            (200, '{"world_epoch": 3.0, "fingerprint": "identity"}', 1.0, None),
+            (None, "", 1.0, "URLError"),
+        ])
+        original_http_get = globals()["http_get"]
+        globals()["http_get"] = lambda *_args, **_kwargs: next(meta_replies)
+        try:
+            if meta_monitor.refresh_meta() or meta_monitor.has_complete_world():
+                failures.append("incomplete meta was accepted as a world identity")
+            try:
+                meta_monitor.poll("must-not-poll")
+                failures.append("poll ran without a complete world identity")
+            except RuntimeError:
+                pass
+            if not meta_monitor.refresh_meta() or not meta_monitor.has_complete_world():
+                failures.append("complete meta was not accepted")
+            complete_world = dict(meta_monitor.world)
+            if meta_monitor.refresh_meta() or meta_monitor.world != complete_world:
+                failures.append("transient meta failure erased a complete identity")
+        finally:
+            globals()["http_get"] = original_http_get
+
+        # Every non-valid read backs off; only a parsed valid response clears it.
+        backoff_monitor = Monitor.__new__(Monitor)
+        backoff_monitor.base, backoff_monitor.conn = "http://backoff.test", conn
+        backoff_monitor.alerter, backoff_monitor.analyzer = alerter, analyzer
+        backoff_monitor.world = dict(world)
+        backoff_monitor.catalog = {"backoff": {"pay_model": "prepaid_balance", "unit": "usd"}}
+        backoff_monitor.backoff = {}
+        failure_replies = iter([
+            (429, "", 1.0, "http 429"),
+            (500, "", 1.0, "http 500"),
+            (None, "", 1.0, "URLError"),
+            (200, "{}", 1.0, None),
+            (200, '{"balance": 9.0, "currency": "usd"}', 1.0, None),
+        ])
+        globals()["http_get"] = lambda *_args, **_kwargs: next(failure_replies)
+        try:
+            for _ in range(4):
+                backoff_monitor.poll("backoff")
+                wait = backoff_monitor.backoff.get("backoff")
+                if wait is None or not 10.0 <= wait <= MAX_BACKOFF_SEC:
+                    failures.append("invalid response did not receive bounded provider backoff")
+                    break
+            backoff_monitor.poll("backoff")
+            if "backoff" in backoff_monitor.backoff:
+                failures.append("valid response did not clear provider backoff")
+        finally:
+            globals()["http_get"] = original_http_get
+
         # Timestamps must be recent: every window is relative to now(), so data
         # planted at a 1970 epoch is invisible to the very code under test.
         # This is exactly how the first run of this self-test failed.
@@ -1029,6 +1279,14 @@ def self_test() -> int:
             if not alerts_path.exists():
                 return []
             return [json.loads(l) for l in alerts_path.read_text(encoding="utf-8").splitlines()]
+
+        before_shape_alert = len(lines())
+        analyzer.on_sample("shape-scope", {}, {
+            "ok": True, "error": None, "model": "prepaid_balance", "unit": "usd",
+            "value": 4.0, "capacity": None, "spend_24h": None, "spend_30d": None,
+            "refresh": None, "shape": "shape-b"}, world, current_shapes)
+        if len(lines()) != before_shape_alert + 1:
+            failures.append("current-world shape change was suppressed by prior-world history")
 
         # --- a RATE, not the size of a drop ---------------------------------
         # The account moves in coarse steps: 3.0 every third reading. True rate
@@ -1180,6 +1438,30 @@ def self_test() -> int:
                    alerts_path.read_text(encoding="utf-8").splitlines()):
             failures.append("world reset produced no alert")
 
+        # --- a snapshot is one world, not an optimistic splice of two --------
+        # `old-only` must disappear entirely. `reset-scope` has an old good row
+        # but a current failure, so old data must not make it green. A
+        # spend-report's fallback count and chart must likewise ignore its old
+        # world rows.
+        previous_world = {"world_epoch": 0.0, "fingerprint": "old"}
+        insert("old-only", now() - 20, 99.0, world_key=previous_world)
+        insert("reset-scope", now() - 20, 88.0, world_key=previous_world)
+        insert("reset-scope", now() - 10, None, ok=0, error="current world failed")
+        insert("report-scope", now() - 20, None, model="spend_report", spend_24h=10.0,
+               world_key=previous_world)
+        insert("report-scope", now() - 10, None, model="spend_report", spend_24h=11.0)
+        scoped_snapshot = write_snapshot(conn, world, root / "world-scoped-data.json")
+        scoped = {provider["provider"]: provider for provider in scoped_snapshot["providers"]}
+        reset = scoped.get("reset-scope", {})
+        report = scoped.get("report-scope", {})
+        if "old-only" in scoped:
+            failures.append("snapshot discovered a provider from a prior world")
+        if reset.get("healthy") or reset.get("value") is not None or reset.get("last_ok_seen") is not None \
+                or reset.get("series"):
+            failures.append("snapshot made prior-world data look healthy or current")
+        if report.get("samples") != 1 or report.get("series"):
+            failures.append("snapshot mixed prior-world spend-report samples into current data")
+
         snapshot = write_snapshot(conn, world, root / "data.json")
         if not snapshot["providers"]:
             failures.append("snapshot has no providers")
@@ -1197,11 +1479,28 @@ def self_test() -> int:
 
 def main(argv):
     ap = argparse.ArgumentParser(description="Spend observability monitor")
-    ap.add_argument("command", nargs="?", default="run", choices=("run", "once", "snapshot"))
+    ap.add_argument("command", nargs="?", default="run",
+                    choices=("run", "once", "snapshot", "stats"))
     ap.add_argument("--self-test", action="store_true")
     args = ap.parse_args(argv)
     if args.self_test:
         return self_test()
+    if args.command == "stats":
+        stats = api_stats(connect())
+        if not stats:
+            print("no reads stored yet")
+            return 0
+        print("reads {reads}  ok {ok}  failed {failed}  success {success_pct}%".format(**stats))
+        print("latency ms  p50 {p50}  p95 {p95}  max {max}".format(**stats["latency_ms"]))
+        print("\nfaults:")
+        for fault in stats["faults"]:
+            print("  {:<46} {:>5}x  across {} providers".format(
+                fault["kind"], fault["count"], fault["providers"]))
+        print("\nper provider:")
+        for name, row in stats["per_provider"].items():
+            print("  {:<12} {:>4} of {:>5} failed  {:>5}%".format(
+                name, row["failed"], row["reads"], row["failure_pct"]))
+        return 0
     if args.command == "snapshot":
         conn = connect()
         row = conn.execute("SELECT world_epoch, fingerprint FROM worlds ORDER BY first_seen DESC "
