@@ -1,0 +1,44 @@
+What I would cut, what I doubt, what I am proud of.
+
+PROUD OF: not the collector, the loop around it. Four times a fresh agent was
+given the code and told to refute it rather than confirm it, and four times it
+found something a green test suite could not. The best one refuted a fix I had
+just made: sending runway to a four-hour average removed a false critical and
+replaced it with silence on an account emptying in two hours. Replaying 705 real
+readings, the only alert the monitor produced was a false one - a "top up now"
+for a postpaid account whose own catalog entry says going negative is normal.
+None of that is visible from a passing test run, which is why mutation_test.py
+exists: it re-introduces each defect and requires the suite to catch it. 29 of
+29. It also caught one of its own mutants measuring nothing, because an anchor
+had become ambiguous and the patch was landing in a different branch.
+
+DOUBTS, named rather than hidden:
+  1. The Task 2 ranking measures agreement with a human-confirmed reference
+     transcript, not with the audio. The reference scores 152/152 by
+     construction. A term that every engine including the reference got wrong is
+     invisible to the method, and the page says so beside the number.
+  2. The monitor is judged on one replayed world over about seven hours. The
+     world-reset path is exercised by fixtures, not by a reset that happened.
+  3. Nothing is deleted from the database, so it grows roughly 50 MB a day.
+     Correct for a run measured in hours, wrong for a service left running, and
+     retention is a decision about discarding evidence.
+
+WOULD CUT: the failure-taxonomy page is a second surface for something the
+dashboard already summarises; in a product I would fold it in and lose a page. I
+would also stop storing the first 600 bytes of every response once the parsers
+stop changing - evidence today, dead weight later.
+
+ON THE TRACE: verbatim, in three parts, across two harnesses, because the work
+genuinely ran in both. Typos in my own messages are spell-corrected on the
+rendered page and nowhere else; the uploaded files and the repository copies are
+untouched, and the correction list is a file in the repo so you can see exactly
+which characters changed. Host names and keys are replaced by stable
+placeholders, never deleted. Two of those substitutions were only caught after
+the same name slipped past a gate in a different alphabet and, later, inside a
+typo - both incidents are in the trace, which is rather the point of sending it.
+
+ONE THING THE BRIEF DID NOT ASK FOR: GET /api/meta. The submission page's own
+JavaScript says grading replays a deterministic world, so every sample here is
+keyed by (world_epoch, fingerprint). Without that, a reset reads as every
+provider being topped up at the same instant, and every baseline silently
+describes a world that no longer exists.

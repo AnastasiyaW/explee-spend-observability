@@ -1858,7 +1858,7 @@ Shell cwd was reset to <REDACTED-16>\Desktop\Claude_code
 118-    User ws
 --
 192:# === <PRIVATE-37> US (Saint Louis) ? <PRIVATE-39>-runpod warm tier === Tailscale <REDACTED-14>
-193-# Public IP 85.239.240.224. Key auth installed 2026-05-20 (<REDACTED-KEY-PATH>).
+193-# Public IP <REDACTED-PUBLIC-IP>. Key auth installed 2026-05-20 (<REDACTED-KEY-PATH>).
 194:Host <PRIVATE-4> <PRIVATE-36>
 195-    HostName <REDACTED-14>
 196-    Port 22

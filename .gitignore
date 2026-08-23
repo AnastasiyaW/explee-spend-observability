@@ -19,3 +19,8 @@ mutation_test.latest.*.log
 
 # Process paperwork: it records local paths by design and is not a deliverable.
 .claude/transfers/
+
+# The submission bundle is built by a script; only its manifest is tracked.
+submission/*.zip
+submission/TRACE-*.md
+submission/alerts.jsonl

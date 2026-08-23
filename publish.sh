@@ -12,7 +12,11 @@
 set -euo pipefail
 
 HOME_DIR=${EXPLEE_HOME:-$HOME/explee-monitor}
-SNAPSHOT=${EXPLEE_SNAPSHOT:-$HOME_DIR/dashboard/data.json}
+# docs/, matching the collector's own default. These two defaults were
+# allowed to disagree once: the collector was pointed at docs/ and this
+# script kept copying dashboard/, so the site served a three-hour-old
+# snapshot while both halves reported success.
+SNAPSHOT=${EXPLEE_SNAPSHOT:-$HOME_DIR/docs/data.json}
 ALERTS=${EXPLEE_ALERTS:-$HOME_DIR/alerts.jsonl}
 WORKTREE=$HOME_DIR/publish
 

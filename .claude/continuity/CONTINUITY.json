@@ -46,7 +46,15 @@
       "export_codex_trace.py",
       ".submission-allow",
       "export_trace.py",
-      "TRACE-task1-review.md"
+      "TRACE-task1-review.md",
+      "docs/alerts.html",
+      "submission/NOTES.txt",
+      "submission/SUBMISSION.md",
+      "submission/alerts.jsonl",
+      "submission/task1-code.zip",
+      "submission/TRACE-task1.md",
+      "submission/TRACE-task2.md",
+      "submission/task3-distill-feedback.md"
     ]
   },
   "preserve": [
@@ -161,6 +169,26 @@
         "TRACE-task1-review.md"
       ],
       "reason": "Exporting the review session found two defects in the exporter itself: a mid-turn prompt carrying an attachment arrives as a list of content blocks and crashed it, and harness notifications on that same path were labelled as messages the human typed, which is why the existing trace header counts 11 human messages where 10 is the truth."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        "docs/alerts.html"
+      ],
+      "reason": "The brief names alerts.jsonl as a deliverable and it was reachable only from the repository and the data branch, not from the site. A live viewer serves it from the same branch the collector publishes to, so the page cannot go stale the way a committed copy would."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        "submission/NOTES.txt",
+        "submission/SUBMISSION.md",
+        "submission/alerts.jsonl",
+        "submission/task1-code.zip",
+        "submission/TRACE-task1.md",
+        "submission/TRACE-task2.md",
+        "submission/task3-distill-feedback.md"
+      ],
+      "reason": "The submission form takes six uploads and two links. The bundle is built from the repository's own files by a script so nothing in it is hand-assembled, and the checklist maps each form field to exactly one artefact."
     }
   ]
 }
