@@ -4,3 +4,5 @@
 docs/data.json
 deploy_remote.sh
 __pycache__/
+TRACE-task1.md
+*.redaction-map.json
