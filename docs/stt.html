@@ -41,8 +41,8 @@
     </section>
 
     <section class="panel status" aria-live="polite">
-      <div><h2>Collection is almost complete.</h2><p>All seven GPU variants have passed their admission canary and produced provenance-validated transcripts. The only remaining lane is the deliberately CPU-only Vosk baseline on the separate high-core-count host.</p></div>
-      <div class="count">28 / 32<br><span style="font-size:12px;letter-spacing:0;font-weight:600">artifacts admitted</span></div>
+      <div><h2>Inference collection is complete.</h2><p>All seven GPU variants passed their admission canary, and the explicit CPU-only Vosk baseline is complete. Every transcript is provenance-validated; human adjudication is the remaining quality gate.</p></div>
+      <div class="count">32 / 32<br><span style="font-size:12px;letter-spacing:0;font-weight:600">artifacts admitted</span></div>
     </section>
 
     <h2>Measured GPU throughput</h2>
@@ -58,12 +58,12 @@
           <tr><td>Meta MMS-1B Russian</td><td>MMS / CTC</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">19.1 s</td><td class="num"><b>188.2×</b> real-time</td><td>complete</td></tr>
           <tr><td>Qwen3-ASR 0.6B</td><td>Qwen</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">697.9 s</td><td class="num"><b>5.2×</b> real-time</td><td>complete</td></tr>
           <tr><td>MOSS Transcribe Diarize 0.9B</td><td>MOSS</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">1,343.3 s</td><td class="num"><b>2.7×</b> real-time</td><td>complete</td></tr>
-          <tr><td>Vosk Russian 0.42</td><td>Vosk / Kaldi</td><td><span class="pill">CPU only</span></td><td class="num">60 min</td><td class="num">—</td><td class="num">—</td><td class="pending">running</td></tr>
+          <tr><td>Vosk Russian 0.42</td><td>Vosk / Kaldi</td><td><span class="pill">CPU only</span></td><td class="num">60 min</td><td class="num">709.7 s</td><td class="num"><b>5.1×</b> real-time</td><td>complete</td></tr>
         </tbody>
       </table>
     </section>
 
-    <section class="panel note"><p><strong>No quality winner is declared yet.</strong> Speed proves that a model can finish quickly; it does not prove that it preserved <em>ClickHouse</em>, <em>RAG</em> or a vendor name. The ranking will appear only after the CPU baseline finishes and a human has confirmed the same time-bounded term slots for every variant.</p></section>
+    <section class="panel note"><p><strong>No quality winner is declared yet.</strong> Speed proves that a model can finish quickly; it does not prove that it preserved <em>ClickHouse</em>, <em>RAG</em> or a vendor name. The ranking will appear only after a human has confirmed the same time-bounded term slots for every variant.</p></section>
 
     <section class="method">
       <h2>What “better” means here</h2>
