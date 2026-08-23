@@ -54,7 +54,10 @@
       "submission/task1-code.zip",
       "submission/TRACE-task1.md",
       "submission/TRACE-task2.md",
-      "submission/task3-distill-feedback.md"
+      "submission/task3-distill-feedback.md",
+      "submission/READ-ME-what-goes-where.md",
+      "submission/Notes-paste-into-form.txt",
+      "submission/LINKS-to-paste.txt"
     ]
   },
   "preserve": [
@@ -189,6 +192,15 @@
         "submission/task3-distill-feedback.md"
       ],
       "reason": "The submission form takes six uploads and two links. The bundle is built from the repository's own files by a script so nothing in it is hand-assembled, and the checklist maps each form field to exactly one artefact."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        "submission/READ-ME-what-goes-where.md",
+        "submission/Notes-paste-into-form.txt",
+        "submission/LINKS-to-paste.txt"
+      ],
+      "reason": "The bundle's files are now named after the form fields they belong in, so the two written notes were renamed to match."
     }
   ]
 }
