@@ -106,8 +106,15 @@ def events(records):
             attachment = record.get("attachment") or {}
             if attachment.get("type") != "queued_command":
                 continue
+            # The prompt is usually a string, but a message carrying an image or
+            # a file arrives as a list of content blocks. Assuming the string
+            # crashed this exporter on the very next session it was pointed at.
             prompt = attachment.get("prompt") or ""
-            if not prompt.strip() or prompt in seen_prompts:
+            if isinstance(prompt, list):
+                prompt = "\n".join(
+                    block.get("text", "") for block in prompt
+                    if isinstance(block, dict) and block.get("type") == "text")
+            if not isinstance(prompt, str) or not prompt.strip() or prompt in seen_prompts:
                 continue
             seen_prompts.add(prompt)
             quote, own = split_quoted_reply(prompt)
@@ -117,7 +124,15 @@ def events(records):
             if own:
                 pieces.append(own)
             if pieces:
-                yield stamp, "User (sent mid-turn)", pieces
+                # Machine text arrives on this path too - a background agent
+                # finishing, a hook answering back. It belongs in the trace
+                # because it changed what happened next, but labelling it as
+                # something the person typed inflates the one count a reader
+                # actually cares about: the existing header says eleven human
+                # messages where ten is the truth.
+                label = ("System (harness)" if HARNESS_TEXT.match(own or prompt)
+                         else "User (sent mid-turn)")
+                yield stamp, label, pieces
             continue
 
         message = record.get("message")

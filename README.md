@@ -93,14 +93,14 @@ first, and that ordering is the answer to "what should I look at".
 
 | alert | fires when | why this number |
 |---|---|---|
-| `burn_anomaly` | recent rate ≥ **4×** the median of per-bucket rates, sustained ≥ **10 min** | the task's own example is "~4x above normal, sustained 20min"; firing at half the sustain gives warning while it is still actionable |
-| `spend_spike` | for accounts with no balance: **accrual per hour** ≥ 4× its own normal, sustained | a trailing total is not a rate — see the review section below |
-| `runway` | < **24 h** (warn), < **6 h** (critical) | 24h is one working day of notice; 6h is "top up now" |
+| `burn_anomaly` | a **sustained** burn ≥ **4×** the median of per-bucket rates, held ≥ **10 min** | the task's own example is "~4x above normal, sustained 20min"; firing at half the sustain gives warning while it is still actionable. "Sustained" is not decoration: the balance must fall across ≥ 3 separate intervals, which is what tells a burn apart from one coarse step |
+| `spend_spike` | for accounts with no balance: **accrual per hour** ≥ 4× the average the trailing total itself implies | a trailing total is not a rate, and neither is the median of its own derivative — that median is zero most of the time, because the window falls as old spend ages out. See the review section |
+| `runway` | < **24 h** (warn), < **6 h** (critical), and **0 or less** (critical, "empty, not slow") | 24h is one working day of notice; 6h is "top up now". Two rates are weighed and the shorter answer wins: the four-hour aggregate, and the rate of a burn happening right now |
 | `stale` | **3** consecutive failed reads | measured: single failures are injected and rotate, so 1 would be pure noise |
-| `world` | epoch or fingerprint changes | every baseline before it is void |
+| `world` | epoch or fingerprint changes | every baseline before it is void, and so is every cooldown |
 | `shape` | a provider's response layout changes | the fallback parser keeps returning *a* number; the risk is that it now means something else |
 | `credits_low` | ≤ 10% of package left | a package cannot be topped up mid-cycle, only waited out |
-| `debt` | postpaid balance negative **and** growing | negative is normal for `vastai`; the rate is the signal |
+| `debt` | postpaid debt growing ≥ **4×** its own normal | negative is normal for `vastai` and so is steady growth. Alerting on any growing debt produced twelve identical lines — 17% of every alert written |
 | `catalog:change` | a provider appears or disappears | a provider that vanishes stops being watched, which looks like one that stopped spending |
 
 **What is deliberately *not* an alert:** a balance going **up**. Top-ups and the
@@ -163,7 +163,8 @@ invented a 47,943/h phantom burn; the snapshot was rewritten every second
 `alerts.jsonl` would have killed the run permanently.
 
 The previous self-test passed on three of five deliberately broken versions.
-The current one kills fourteen of fourteen.
+The current one kills **twenty-two of twenty-two**, in about a minute; the
+self-test itself runs in three seconds.
 
 ### A second review, against this brief
 
@@ -203,6 +204,78 @@ code": each page's own `render()` was run over a hostile payload and the HTML it
 produced was inspected — 14 sinks, and the first run of that probe found a
 fifteenth I had missed by eye.
 
+### A third pass, adversarial, and what it cost me
+
+A fresh agent was then given the code and told to refute the two fixes above
+rather than confirm them. It refuted one of mine and found six more, all with
+reproductions. Every one is fixed and carries both a regression and a mutant.
+
+**My own fix traded a false alarm for silence.** Sending runway to the four-hour
+aggregate removed the bogus critical — and then an account burning 4,000/h for
+the last fifteen minutes published *35.8 hours* of runway and said nothing,
+because fifteen minutes barely moves a four-hour average. That is the worse
+mistake of the two. Both rates are now weighed and the shorter answer wins,
+which needs a way to tell a burn from one coarse step: a burn moves the balance
+across several intervals in a row.
+
+**The spend detector could not fire in the regime the stand actually produces.**
+Its baseline was the median of its own derivative, and a trailing window falls
+as old spend ages out — measured over our own seven hours, anthropic's
+trailing-24h figure fell on **768 of 1,148** readings and meta_ads' on 541 of
+1,161. Most buckets are therefore zero, the median is zero, and the detector
+returned before comparing anything. The baseline is now the average the level
+itself implies.
+
+**A balance of exactly 0.00 raised nothing** while 0.01 raised a critical: the
+guard was `value > 0`. The one account that is actually empty was the one that
+got silence.
+
+**Steady postpaid debt alerted forever** — no threshold at all, twelve identical
+`vastai` lines, 17% of every alert in the file. It now needs acceleration.
+
+Also fixed: an outage left the sustain clock running, so the first sample after
+half an hour of failures fired instantly claiming to have watched a burst
+through the outage; a new world inherited the old world's cooldown, swallowing
+its first alert; and `healthy` had no age bound, so a stopped collector painted
+the whole board green.
+
+One thing worth saying plainly: the suite was green before this pass, and green
+again after it. That is the point of the mutation gate — it asks whether the
+tests can fail, not whether they pass.
+
+## About the trace
+
+The work ran across two harnesses, so the trace is in two parts and both are
+here: the Claude Code session that built the collector, and the Codex session
+that carried it on. They are exported by the same rules and rendered on one
+page, in order.
+
+**What is removed, and nothing else:** duplicate records for a message that was
+typed mid-turn, `<system-reminder>` blocks that hooks inject into a user turn,
+editor bookkeeping with no conversational content, and tool output past a stated
+cap — where every cut says how many characters went. The exporter's own header
+records the bug that made those rules necessary: an earlier version counted 91
+"user" messages when the human had written eight, because tool results arrive
+under the same role and mid-turn messages arrive as a different record type
+entirely, which was on the skip list.
+
+**What is replaced, never deleted:** our own host names, keys, client names and
+private paths, each by a stable placeholder. Deleting a message to hide
+something would forge the trace; substituting a hostname does not. The mapping
+stays on this machine. One thing that pass missed the first time and this one
+caught: the map was built from Latin spellings, so the hosting vendor's name
+went out **eight times in Cyrillic**, inside Russian sentences, in a file whose
+header said it was redacted. Both alphabets are in the gate now.
+
+**Typos are not corrected in the record.** The brief is explicit that a
+hand-made trace tells them nothing, and fast unedited typing is part of what it
+shows. The page therefore opens on the verbatim text and offers a
+spelling-corrected reading as a switch, built from
+[`trace-corrections.json`](trace-corrections.json) — explicit find/replace pairs,
+so which characters changed is auditable rather than buried in a rewritten file.
+Each pair must match its message exactly once or the render fails. One of them
+is interpretation rather than spelling, and that one is named in the file.
+
 ## How it runs
 
 ```
@@ -239,12 +312,11 @@ python3 spend_monitor.py run           # the monitor
 - **`raw.githubusercontent` caches for a few minutes.** The dashboard polls
   every 30s, but the underlying data is at most ~5 minutes old. For runway
   measured in hours that is well inside the noise.
-- **An account that steps slower than half an hour gets no burn anomaly.** Its
-  median bucket rate is zero, and comparing a 15-minute window against a zero
-  baseline would fire on every step it takes. Runway still works there — it uses
-  the window aggregate — but acceleration on such an account is invisible until
-  its baseline becomes positive. Naming the hole beats a detector that cries
-  wolf once per step.
+- **A single coarse step is never treated as an anomaly.** A burn has to move
+  the balance across at least three intervals before either detector looks at
+  it, so an account that spends in one large step every few hours is judged on
+  its four-hour rate alone. That is deliberate: the alternative fires once per
+  step, forever.
 - **Nothing is deleted, so the database grows.** Every sample keeps the first
   600 bytes of the body as evidence, which is roughly 50 MB a day at this poll
   rate. Correct for a run measured in hours, wrong for a service left running;

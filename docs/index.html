@@ -4,100 +4,118 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Explee test task</title>
+<link rel="stylesheet" href="site.css">
 <style>
-  :root{
-    --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
-    --ok:#1a7f4b; --warn:#a86a00; --crit:#b3261e; --accent:#2b5cd9; --grid:#efeee8;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
-      --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
-    --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .wrap{max-width:860px;margin:0 auto;padding:48px 20px 70px}
-  h1{font-size:27px;margin:0 0 6px;letter-spacing:-.02em}
-  .lede{color:var(--muted);font-size:15px;margin:0 0 34px;max-width:62ch}
-  a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);
-    border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:0 0 14px;
-    transition:border-color .13s ease, transform .13s ease}
-  a.card:hover{border-color:var(--accent);transform:translateY(-1px)}
-  .row{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-  .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);
-    border:1px solid var(--line);border-radius:20px;padding:2px 9px;white-space:nowrap}
-  h2{font-size:18px;margin:0;letter-spacing:-.01em}
-  .card p{color:var(--muted);font-size:13.5px;margin:7px 0 0;max-width:58ch}
-  .live{margin-top:11px;font-size:13px;font-variant-numeric:tabular-nums}
-  .live b{font-weight:650}
-  .go{color:var(--accent);font-size:13px;font-weight:600;margin-top:11px;display:inline-block}
+  /* The landing is a reading column, and its cards are links rather than
+     read-outs. Everything else it needs comes from site.css.
+     ------------------------------------------------------------------
+     Two axes, and only two. COLOUR says which part of the work a card
+     belongs to: the accent is Task 1, and Task 1 only, so the dashboard and
+     the stand read as one thing; everything else stays neutral rather than
+     competing for the same blue. SIZE says how important the destination is:
+     rank-a is the page you are meant to open, rank-b leads its own group,
+     rank-c is supporting evidence. A card never borrows weight it has not
+     earned - the stand is the same blue as the dashboard and visibly
+     smaller than it. */
+  :root{--wrap:860px}
+
+  .linkcard{display:block;text-decoration:none;color:inherit;background:var(--panel);
+    border:1px solid var(--line);box-shadow:inset 3px 0 0 var(--line);
+    border-radius:var(--r);padding:13px 16px 13px 19px;margin:0 0 9px;
+    transition:border-color .13s ease, background-color .13s ease}
+  .linkcard:hover{background:var(--hover);border-color:var(--muted)}
+  .linkcard:hover .go{color:var(--ink)}
+  .linkcard .row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .cardtitle{font-size:14px;font-weight:650;letter-spacing:-.01em}
+  .linkcard p{color:var(--muted);font-size:12.5px;line-height:1.6;margin:6px 0 0;max-width:68ch}
+  .linkfoot{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    margin-top:11px;padding-top:9px;border-top:1px solid var(--line)}
+  .live{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .live b{color:var(--ink);font-weight:650}
+  .go{font-size:12px;font-weight:600;color:var(--muted);margin-left:auto;white-space:nowrap}
   .soon{opacity:.62;pointer-events:none}
-  footer{margin-top:34px;color:var(--muted);font-size:12.5px;line-height:1.7}
-  footer a{color:var(--accent)}
-  code{font:12px ui-monospace,"Cascadia Code",Consolas,monospace}
-  .langswitch{position:fixed;top:12px;right:14px;display:flex;gap:0;z-index:5;
-    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}
-  .langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
-    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}
-  .langswitch button[aria-current="true"]{background:var(--accent);color:#fff}
+
+  /* group: Task 1 */
+  .task1{box-shadow:inset 3px 0 0 var(--accent-weak)}
+  .task1:hover{border-color:var(--accent-weak)}
+  .task1:hover .go{color:var(--accent)}
+  .task1 .tag{color:var(--accent);border-color:var(--accent-weak)}
+
+  /* rank */
+  .rank-a{padding:18px 20px 18px 23px}
+  .rank-a.task1{box-shadow:inset 3px 0 0 var(--accent)}
+  .rank-a.task1:hover{border-color:var(--accent)}
+  .rank-a .cardtitle{font-size:17px}
+  .rank-a p{font-size:13px;margin-top:7px}
+  .rank-a .live{font-size:12.5px}
+  .rank-a .go{font-size:13px;font-weight:650;color:var(--accent)}
+  .rank-b{padding:15px 17px 15px 20px}
+  .rank-b .cardtitle{font-size:15px}
+  .rank-b .go{font-weight:650;color:var(--ink)}
 </style>
 <script src="i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <h1 data-i18n="index.title">Explee test task</h1>
-  <p class="lede" data-i18n="index.lede">Three pieces of work. The spend monitor has been running continuously since it
-     was deployed, and the two counters below it are read from it as this page loads.
-     The other lines are written status, not live reads.</p>
+  <header class="pagehead">
+    <h1 data-i18n="index.title">Explee test task</h1>
+    <p class="lede" data-i18n="index.lede">Three pieces of work. The spend monitor has been running continuously since it
+       was deployed, and the two counters below it are read from it as this page loads.
+       The other lines are written status, not live reads.</p>
+  </header>
 
-  <a class="card" href="spend.html">
-    <div class="row"><span class="tag" data-i18n="index.t1.tag">Task 1</span><h2 data-i18n="index.t1.h">Spend observability</h2></div>
+  <a class="linkcard task1 rank-a" href="spend.html">
+    <div class="row"><span class="tag" data-i18n="index.t1.tag">Task 1</span><h2 class="cardtitle" data-i18n="index.t1.h">Spend observability</h2></div>
     <p data-i18n="index.t1.p">Fifteen provider accounts, one number each and no history endpoint — so the
        history is built by the monitor itself. Sorted by runway, because hours are
        the only unit that compares dollars, pounds and credits.</p>
-    <div class="live" id="live-spend">loading…</div>
-    <span class="go" data-i18n="index.t1.go">Open the dashboard →</span>
+    <div class="linkfoot">
+      <span class="live" id="live-spend">loading…</span>
+      <span class="go" data-i18n="index.t1.go">Open the dashboard →</span>
+    </div>
   </a>
 
-  <a class="card" href="stand.html">
-    <div class="row"><span class="tag" data-i18n="index.t2.tag">Task 1 · evidence</span><h2 data-i18n="index.t2.h">How the stand behaves</h2></div>
+  <a class="linkcard task1 rank-c" href="stand.html">
+    <div class="row"><span class="tag" data-i18n="index.t2.tag">Task 1 · evidence</span><h2 class="cardtitle" data-i18n="index.t2.h">How the stand behaves</h2></div>
     <p data-i18n="index.t2.p">The API misbehaves on purpose. Coping with that is only believable if the
        misbehaviour is measured, so the failure taxonomy lives on its own page
        instead of crowding the number that matters.</p>
-    <div class="live" id="live-stand">loading…</div>
-    <span class="go" data-i18n="index.t2.go">Open the measurements →</span>
+    <div class="linkfoot">
+      <span class="live" id="live-stand">loading…</span>
+      <span class="go" data-i18n="index.t2.go">Open the measurements →</span>
+    </div>
   </a>
 
-  <a class="card" href="stt.html" id="stt-card">
-    <div class="row"><span class="tag" data-i18n="index.t3.tag">Task 2 · STT evidence</span><h2 data-i18n="index.t3.h">Picking a transcriber</h2></div>
+  <a class="linkcard rank-b" href="stt.html" id="stt-card">
+    <div class="row"><span class="tag" data-i18n="index.t3.tag">Task 2 · STT evidence</span><h2 class="cardtitle" data-i18n="index.t3.h">Picking a transcriber</h2></div>
     <p data-i18n="index.t3.p">Eight model variants across six independent STT families, on one hour of
        Russian speech with dense English IT terms.
        The metric is the deliverable: word error rate is the wrong primary score
        for this audio, and the report explains why with numbers.</p>
-    <div class="live" id="live-stt"><span style="color:var(--ok)">●</span> 32 / 32 provenance-validated runs complete · human quality adjudication next</div>
-    <span class="go" data-i18n="index.t3.go">Open the comparison →</span>
+    <div class="linkfoot">
+      <span class="live" id="live-stt"><span style="color:var(--ok)">●</span> 32 / 32 provenance-validated runs complete · human quality adjudication next</span>
+      <span class="go" data-i18n="index.t3.go">Open the comparison →</span>
+    </div>
   </a>
 
-  <a class="card" href="stt-evidence.html">
-    <div class="row"><span class="tag">Task 2 · evidence</span><h2>Audio &amp; transcript comparison</h2></div>
+  <a class="linkcard rank-c" href="stt-evidence.html">
+    <div class="row"><span class="tag">Task 2 · evidence</span><h2 class="cardtitle">Audio &amp; transcript comparison</h2></div>
     <p>Four exact 15-minute source windows, complete transcripts for all eight variants, and 144 synchronized 25-second comparisons across every model.</p>
-    <span class="go">Open the full-hour evidence →</span>
+    <div class="linkfoot">
+      <span class="go">Open the full-hour evidence →</span>
+    </div>
   </a>
 
-  <a class="card" href="trace.html">
+  <a class="linkcard rank-c" href="trace.html">
     <div class="row"><span class="tag" data-i18n="index.trace.tag">How it was made</span>
-      <h2 data-i18n="index.trace.h">The agent trace</h2></div>
+      <h2 class="cardtitle" data-i18n="index.trace.h">The agent trace</h2></div>
     <p data-i18n="index.trace.p">The whole session, verbatim: the mistakes, the dead ends and the
        corrections. The corrections are the part that shows how a person drives an agent, so
        nothing is cut.</p>
-    <div class="live" id="live-trace"></div>
-    <span class="go" data-i18n="index.trace.go">Open the trace →</span>
+    <div class="linkfoot">
+      <span class="live" id="live-trace"></span>
+      <span class="go" data-i18n="index.trace.go">Open the trace →</span>
+    </div>
   </a>
 
   <footer id="foot">

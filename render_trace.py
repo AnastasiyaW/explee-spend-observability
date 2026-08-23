@@ -159,57 +159,45 @@ PAGE = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent trace · Task 1</title>
+<link rel="stylesheet" href="site.css">
 <style>
-  :root{{
-    --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
-    --accent:#2b5cd9; --human:#1a7f4b; --tool:#6b6a60; --grid:#efeee8; --code:#f5f4ef;
-  }}
-  @media (prefers-color-scheme: dark){{
-    :root:not([data-theme="light"]){{
-      --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
-      --accent:#7ea2ff; --human:#4ec27f; --tool:#9d9c91; --grid:#26261f; --code:#111;
-    }}
-  }}
-  *{{box-sizing:border-box}}
-  body{{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.62 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}}
-  .shell{{display:grid;grid-template-columns:270px minmax(0,1fr);gap:26px;
-    max-width:1220px;margin:0 auto;padding:26px 18px 80px}}
+  /* Tokens, type scale, header, code, footer and the language switch come from
+     site.css - the same file the other three pages load. What is left here is
+     only the trace's own furniture: the two-column shell, the rail of human
+     messages, and the message blocks themselves. */
+  .shell{{display:grid;grid-template-columns:264px minmax(0,1fr);gap:24px;
+    max-width:1220px;margin:0 auto;padding:30px 18px 80px}}
   @media (max-width:900px){{ .shell{{grid-template-columns:1fr}} .rail{{position:static;max-height:none}} }}
-  .rail{{position:sticky;top:20px;align-self:start;max-height:88vh;overflow:auto;
-    border:1px solid var(--line);border-radius:11px;background:var(--panel);padding:12px 6px}}
-  .rail h3{{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);
+  .rail{{position:sticky;top:20px;align-self:start;max-height:88vh;overflow:auto;padding:11px 6px}}
+  .rail h3{{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);
     margin:4px 10px 8px;font-weight:600}}
   .rail a{{display:block;color:inherit;text-decoration:none;font-size:12.5px;line-height:1.45;
-    padding:7px 10px;border-radius:7px;border-left:2px solid transparent}}
-  .rail a:hover{{background:var(--grid);border-left-color:var(--human)}}
+    padding:7px 10px;border-radius:var(--r-sm);border-left:2px solid transparent}}
+  .rail a:hover{{background:var(--hover);border-left-color:var(--human)}}
   .rail a b{{display:block;font-size:10.5px;color:var(--muted);font-weight:600;
     letter-spacing:.05em;text-transform:uppercase}}
-  h1{{font-size:23px;margin:0 0 6px;letter-spacing:-.02em}}
-  .lede{{color:var(--muted);font-size:13.5px;margin:0 0 8px;max-width:70ch}}
   .lede a{{color:var(--accent)}}
+
   .facts{{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);
-    border:1px solid var(--line);border-radius:10px;background:var(--panel);
-    padding:10px 13px;margin:0 0 20px}}
-  .facts b{{color:var(--ink)}}
-  .msg{{border:1px solid var(--line);border-radius:11px;background:var(--panel);
-    padding:13px 16px;margin:0 0 11px;scroll-margin-top:16px}}
-  .msg.human{{border-left:3px solid var(--human);background:var(--panel)}}
-  .msg.assistant{{border-left:3px solid var(--accent)}}
-  .msg.tool_call, .msg.tool_result, .msg.system{{border-left:3px solid var(--line)}}
+    padding:10px 14px;margin:0 0 18px;font-variant-numeric:tabular-nums}}
+  .facts b{{color:var(--ink);font-weight:650}}
+
+  /* Who said it is carried by one 3px edge, the same device the landing uses
+     to group its cards: the person and the agent are coloured, the machinery
+     between them is not. */
+  .msg{{border:1px solid var(--line);border-radius:var(--r);background:var(--panel);
+    padding:13px 16px;margin:0 0 10px;scroll-margin-top:16px;
+    box-shadow:inset 3px 0 0 var(--line)}}
+  .msg.human{{box-shadow:inset 3px 0 0 var(--human)}}
+  .msg.assistant{{box-shadow:inset 3px 0 0 var(--accent)}}
   .who{{display:flex;gap:10px;align-items:baseline;font-size:11px;text-transform:uppercase;
     letter-spacing:.07em;color:var(--muted);margin:0 0 7px}}
-  .who .n{{font-weight:700;color:var(--ink)}}
+  .who .n{{font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}}
   .who .role{{font-weight:650}}
   .msg.human .who .role{{color:var(--human)}}
   .msg.assistant .who .role{{color:var(--accent)}}
-  .who time{{margin-left:auto;font:11px ui-monospace,Consolas,monospace;text-transform:none}}
+  .who time{{margin-left:auto;font:11px var(--f-mono);text-transform:none}}
   .msg p{{margin:0 0 9px}} .msg p:last-child{{margin-bottom:0}}
-  pre{{background:var(--code);border:1px solid var(--line);border-radius:8px;padding:10px 12px;
-    overflow-x:auto;margin:0 0 9px}}
-  pre code{{font:12px/1.55 ui-monospace,"Cascadia Code",Consolas,monospace;background:none;padding:0}}
-  code{{font:12.5px ui-monospace,"Cascadia Code",Consolas,monospace;background:var(--code);
-    border-radius:4px;padding:1px 4px}}
   blockquote{{margin:0 0 9px;padding-left:11px;border-left:2px solid var(--line);color:var(--muted)}}
   ul{{margin:0 0 9px;padding-left:20px}}
   details summary{{cursor:pointer;color:var(--muted);font-size:12.5px;list-style:none}}
@@ -217,29 +205,23 @@ PAGE = """<!doctype html>
   details summary::before{{content:"\\25b8 ";color:var(--muted)}}
   details[open] summary::before{{content:"\\25be "}}
   details[open] summary{{margin-bottom:8px}}
-  .peek{{font:12px ui-monospace,Consolas,monospace;color:var(--muted)}}
-  footer{{margin-top:26px;color:var(--muted);font-size:12.5px;line-height:1.7}}
-  footer a{{color:var(--accent)}}
-  a.back{{color:var(--accent);text-decoration:none;font-size:13px}}
-  .langswitch{{position:fixed;top:12px;right:14px;display:flex;z-index:5;
-    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}}
-  .langswitch button{{border:0;background:transparent;color:var(--muted);cursor:pointer;
-    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}}
-  .langswitch button[aria-current="true"]{{background:var(--accent);color:#fff}}
+  .peek{{font:12px var(--f-mono);color:var(--muted)}}
 </style>
 <script src="i18n.js"></script>
 </head>
 <body>
 <div class="shell">
-  <nav class="rail">
+  <nav class="panel rail">
     <h3 data-i18n="trace.rail">What the human said</h3>
 {rail}
   </nav>
   <main>
-    <p><a class="back" href="./" data-i18n="spend.back">&larr; all three tasks</a></p>
-    <h1 data-i18n="trace.h1">Agent trace &middot; Task 1</h1>
-    <p class="lede" data-i18n="trace.lede">{lede}</p>
-    <div class="facts">
+    <header class="pagehead">
+      <nav class="backrow"><a class="back" href="./" data-i18n="spend.back">&larr; all three tasks</a></nav>
+      <h1 data-i18n="trace.h1">Agent trace &middot; Task 1</h1>
+      <p class="lede" data-i18n="trace.lede">{lede}</p>
+    </header>
+    <div class="panel facts">
       <span><b>{total}</b> <span data-i18n="trace.f.total">messages</span></span>
       <span><b>{humans}</b> <span data-i18n="trace.f.human">from the human</span></span>
       <span><b>{assistants}</b> <span data-i18n="trace.f.agent">from the agent</span></span>

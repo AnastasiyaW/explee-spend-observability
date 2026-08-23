@@ -4,87 +4,43 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Spend Observability</title>
+<link rel="stylesheet" href="site.css">
 <style>
-  :root{
-    --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
-    --ok:#1a7f4b; --warn:#a86a00; --crit:#b3261e; --accent:#2b5cd9;
-    --grid:#efeee8;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
-      --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
-    --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
-  h1{font-size:21px;margin:0 0 2px;letter-spacing:-.01em}
-  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
-  .sub b{color:var(--ink);font-weight:600}
-  .banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:12px 14px;margin:0 0 16px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;
-    align-items:center}
+  /* Only the parts that exist nowhere else: the collector status strip, the
+     sparkline and the alert feed. Frame, cards, table and tags: site.css. */
+  :root{--wrap:1180px;--card-min:230px}
+  .scroll table{min-width:820px}
+  .banner{padding:11px 14px;margin:0 0 16px;font-size:13px;
+    display:flex;gap:18px;flex-wrap:wrap;align-items:center}
   .banner .k{color:var(--muted)}
-  .banner code{font:12px/1.4 ui-monospace,"Cascadia Code",Consolas,monospace}
-  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:7px}
   .attn{border-left:3px solid var(--crit)}
-  .cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
-    margin:0 0 22px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
-  .card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
-  .card .big{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-top:3px}
-  .card .note{font-size:12px;color:var(--muted);margin-top:4px}
-  h2{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
-    margin:26px 0 9px;font-weight:600}
-  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-  table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
-  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
-    color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);
-    white-space:nowrap}
-  td{padding:9px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
-  tr:last-child td{border-bottom:0}
-  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
-  .prov{font-weight:600}
-  .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
-    border:1px solid var(--line);border-radius:20px;padding:1px 7px;white-space:nowrap}
-  .crit{color:var(--crit);font-weight:650}
-  .warn{color:var(--warn);font-weight:600}
-  .ok{color:var(--ok)}
-  .muted{color:var(--muted)}
-  .alerts{background:var(--panel);border:1px solid var(--line);border-radius:10px;
-    padding:4px 0;max-height:420px;overflow-y:auto}
-  .alert{padding:9px 14px;border-bottom:1px solid var(--grid);font-size:13.5px;
+  .alerts{padding:2px 0;max-height:420px;overflow-y:auto}
+  .alert{padding:8px 14px;border-bottom:1px solid var(--grid);font-size:13px;
     display:flex;gap:11px;align-items:flex-start}
   .alert:last-child{border-bottom:0}
-  .alert time{color:var(--muted);font:11.5px/1.6 ui-monospace,Consolas,monospace;white-space:nowrap}
-  .empty{padding:26px 14px;color:var(--muted);font-size:13.5px;text-align:center}
-  footer{margin-top:30px;color:var(--muted);font-size:12.5px;line-height:1.65}
-  footer code{font:11.5px ui-monospace,Consolas,monospace}
+  .alert time{color:var(--muted);font:11.5px/1.6 var(--f-mono);white-space:nowrap}
+  .empty{padding:24px 14px;color:var(--muted);font-size:13px;text-align:center;max-width:70ch;margin:0 auto}
   svg.spark{display:block}
-  .langswitch{position:fixed;top:12px;right:14px;display:flex;gap:0;z-index:5;
-    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}
-  .langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
-    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}
-  .langswitch button[aria-current="true"]{background:var(--accent);color:#fff}
+  #alertnote{margin:-2px 0 8px}
+  /* The way through to the evidence page. One filled control on the page, and
+     it is small: the numbers above it stay the loudest thing here. */
+  #standlink{margin:18px 0 0;font-size:13px;line-height:2.2}
 </style>
 <script src="i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <p style="margin:0 0 10px"><a href="./" style="color:var(--accent);text-decoration:none;font-size:13px" data-i18n="spend.back">&larr; all three tasks</a></p>
-  <h1 data-i18n="spend.h1">Spend observability</h1>
-  <p class="sub" id="sub">loading…</p>
+  <header class="pagehead">
+    <nav class="backrow"><a class="back" href="./" data-i18n="spend.back">&larr; all three tasks</a></nav>
+    <h1 data-i18n="spend.h1">Spend observability</h1>
+    <p class="sub" id="sub">loading…</p>
+  </header>
 
-  <div class="banner" id="banner"></div>
+  <div class="panel banner" id="banner"></div>
   <div class="cards" id="cards"></div>
 
-  <h2 data-i18n="spend.h2.table">Every account, soonest to run out first</h2>
+  <h2 class="sectionhead" data-i18n="spend.h2.table">Every account, soonest to run out first</h2>
   <div class="scroll">
     <table>
       <thead><tr>
@@ -101,11 +57,11 @@
     </table>
   </div>
 
-  <h2 data-i18n="spend.h2.alerts">Alerts</h2>
-  <p class="sub" id="alertnote" style="margin:-4px 0 8px"></p>
-  <div class="alerts" id="alerts"></div>
+  <p class="sub" id="standlink"></p>
 
-  <p class="sub" id="standlink" style="margin-top:14px"></p>
+  <h2 class="sectionhead" data-i18n="spend.h2.alerts">Alerts</h2>
+  <p class="sub" id="alertnote"></p>
+  <div class="panel alerts" id="alerts"></div>
 
   <footer id="foot"></footer>
 </div>
@@ -255,8 +211,10 @@ function render(d){
     ? t("spend.standlink.a", "The stand answered") + ' <b>' + api.success_pct + '%</b> '
       + t("spend.standlink.of", "of") + ' ' + api.reads.toLocaleString("en-US") + ' '
       + t("spend.standlink.b", "reads")
-      + ' &middot; <a href="stand.html">' + t("spend.standlink.go", "how it misbehaves &rarr;") + '</a>'
-    : '<a href="stand.html">' + t("spend.standlink.plain", "how the stand behaves &rarr;") + '</a>';
+      + ' <span class="sep">&middot;</span> <a class="btn" href="stand.html">'
+      + t("spend.standlink.go", "how it misbehaves &rarr;") + '</a>'
+    : '<a class="btn" href="stand.html">'
+      + t("spend.standlink.plain", "how the stand behaves &rarr;") + '</a>';
 
   // The window note is generated by the collector in English. Rather than show a
   // half-translated sentence, the Russian side rebuilds it from the one number it

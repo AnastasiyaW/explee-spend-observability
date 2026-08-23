@@ -1,0 +1,155 @@
+/* site.css - one visual system for the four pages of this test task.
+ *
+ * Everything more than one page needs lives here: the colour tokens, the type
+ * scale, the page header, panels, cards, tables, tags, code, the footer and
+ * the language switch. A page keeps a <style> block only for what is
+ * genuinely its own - the landing's link cards, the dashboard's sparkline and
+ * alert feed, the stand's failure bars, the trace's rail and messages.
+ *
+ * No external assets. System font stacks only.
+ * ---------------------------------------------------------------------------
+ * Spacing rhythm: multiples of 2px; in practice 4 / 8 / 10 / 14 / 22 / 30.
+ * Radii: 10px for a panel, 7px for something inside one, 20px for a pill.
+ */
+
+/* --- tokens ---------------------------------------------------------------
+ * Light is the base. Dark is written twice, and only here: once for the system
+ * preference, once for the explicit data-theme override, because a media query
+ * and an attribute selector cannot share a rule. Two adjacent copies in one
+ * file beats the eight copies that were spread across four pages.
+ */
+:root{
+  --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
+  --grid:#efeee8; --code:#f4f3ee; --hover:#f7f6f2;
+  --ok:#1a7f4b; --warn:#a86a00; --crit:#b3261e; --accent:#2b5cd9;
+  /* The accent belongs to Task 1. --accent-weak is the same family one step
+     down, for the supporting page inside that task; --on-accent is what stays
+     readable on top of a filled accent surface in either theme. */
+  --accent-weak:#b6c6ef; --on-accent:#fff;
+  --human:var(--ok);
+
+  --f-sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --f-mono:ui-monospace,"Cascadia Code",Consolas,monospace;
+
+  --r:10px; --r-sm:7px; --r-pill:20px;
+  --wrap:1080px;
+
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+    --grid:#26261f; --code:#12120e; --hover:#22221b;
+    --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff;
+    --accent-weak:#3f5891; --on-accent:#101218;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+  --grid:#26261f; --code:#12120e; --hover:#22221b;
+  --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff;
+  --accent-weak:#3f5891; --on-accent:#101218;
+  color-scheme:dark;
+}
+
+/* --- base ---------------------------------------------------------------- */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--f-sans);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+/* --- page frame ---------------------------------------------------------- */
+.wrap{max-width:var(--wrap);margin:0 auto;padding:30px 18px 72px}
+
+.pagehead{margin:0 0 22px}
+.backrow{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 14px}
+.back{color:var(--accent);text-decoration:none;font-size:13px}
+.back:hover{text-decoration:underline}
+/* Where two links sit side by side, only one of them is the way back to the
+   thing you were reading. The other is a shortcut and is kept quieter. */
+.back.quiet{color:var(--muted);font-size:12.5px}
+.back.quiet:hover{color:var(--accent)}
+
+h1{font-size:22px;font-weight:650;line-height:1.25;letter-spacing:-.02em;margin:0}
+h2,h3{margin:0;font-weight:600}
+.lede,.sub{color:var(--muted);font-size:13.5px;line-height:1.6;margin:6px 0 0;max-width:76ch}
+.sub b{color:var(--ink);font-weight:600}
+
+/* Section label. Deliberately quiet: it names a block, it is not a headline. */
+.sectionhead{font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);font-weight:600;margin:30px 0 9px}
+
+/* --- panels -------------------------------------------------------------- */
+.panel,.card,.scroll{background:var(--panel);border:1px solid var(--line);border-radius:var(--r)}
+.scroll{overflow-x:auto}
+
+/* Stat card: label, number, one line of context. Identical on both dashboards.
+   auto-FIT, not auto-fill: auto-fill leaves an empty fifth track and the row of
+   four then stops short of the table underneath it. */
+.cards{display:grid;gap:10px;margin:0 0 22px;
+  grid-template-columns:repeat(auto-fit,minmax(var(--card-min,220px),1fr))}
+.card{padding:12px 14px}
+.card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.card .big{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-top:3px;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+.card .note{font-size:12px;color:var(--muted);margin-top:4px;line-height:1.45}
+
+/* --- tables -------------------------------------------------------------- */
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--muted);font-weight:600;padding:9px 12px;
+  border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--hover)}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.prov{font-weight:600}
+
+/* --- small parts --------------------------------------------------------- */
+.tag{display:inline-block;font-size:10.5px;line-height:1.55;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--muted);border:1px solid var(--line);
+  border-radius:var(--r-pill);padding:1px 8px;white-space:nowrap}
+.crit{color:var(--crit);font-weight:650}
+.warn{color:var(--warn);font-weight:600}
+.ok{color:var(--ok)}
+.muted{color:var(--muted)}
+
+/* The one filled control in the product: the way from the dashboard to the
+   evidence behind it. Small on purpose - the numbers stay the loudest thing. */
+.btn{display:inline-block;vertical-align:middle;background:var(--accent);
+  color:var(--on-accent);text-decoration:none;font-size:12.5px;font-weight:650;
+  line-height:1.5;padding:5px 11px;border-radius:var(--r-sm);white-space:nowrap}
+.btn:hover{opacity:.88}
+.sep{color:var(--muted);margin:0 6px}
+
+code{font-family:var(--f-mono);font-size:12.5px;background:var(--code);
+  border-radius:4px;padding:1px 5px}
+pre{background:var(--code);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:10px 12px;overflow-x:auto;margin:0 0 9px}
+pre code{font-size:12px;line-height:1.55;background:none;padding:0}
+
+footer{margin-top:30px;padding-top:14px;border-top:1px solid var(--line);
+  color:var(--muted);font-size:12.5px;line-height:1.7}
+footer a{color:var(--accent)}
+footer code{font-size:11.5px}
+
+/* --- language switch ----------------------------------------------------- */
+.langswitch{position:fixed;top:12px;right:14px;display:flex;z-index:5;
+  border:1px solid var(--line);border-radius:var(--r-pill);overflow:hidden;
+  background:var(--panel)}
+.langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
+  font:600 11px/1 var(--f-sans);letter-spacing:.06em;padding:6px 10px}
+.langswitch button:hover{color:var(--ink)}
+.langswitch button[aria-current="true"]{background:var(--accent);color:var(--on-accent)}
+
+@media (max-width:640px){
+  .wrap{padding:24px 14px 56px}
+  .langswitch{top:8px;right:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important}
+}

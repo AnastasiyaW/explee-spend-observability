@@ -4,6 +4,18 @@
 docs/data.json
 deploy_remote.sh
 __pycache__/
-TRACE-task1.md
+# The unredacted exports and their maps never leave this machine. Only the
+# redacted traces are committed: a map is a list of exactly what was hidden.
+# Match on the shape, not on a list of names - a list is one export away from
+# being incomplete, and the file it misses is the raw one.
+TRACE-*.md
+!TRACE-*.redacted.md
 *.redaction-map.json
+
+# Agent scratch and worktrees
+.claude/worktrees/
+verify-out.txt
 mutation_test.latest.*.log
+
+# Process paperwork: it records local paths by design and is not a deliverable.
+.claude/transfers/

@@ -23,7 +23,7 @@ MUTANTS = [
      '        if shape_history and record["shape"] and record["shape"] not in shape_history:',
      "        if False:"),
     ("M5 spend-report detector disabled",
-     "        if median <= 0 or recent / median < ANOMALY_RATIO:",
+     "        if recent is None or median <= 0 or recent / median < ANOMALY_RATIO:",
      "        if True:"),
     ("M6 world key drops the fingerprint",
      'AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts",\n'
@@ -48,13 +48,45 @@ MUTANTS = [
     ("M12 shape history crosses stand worlds",
      '        "AND world_epoch IS ? AND fingerprint IS ?",\n        (provider, world.get("world_epoch"), world.get("fingerprint"))).fetchall()}',
      '        "",\n        (provider,)).fetchall()}'),
-    ("M13 a zero baseline falls back to the 15-minute burn",
-     "        rate = publishable_rate(self.conn, provider, world, median, bucket_count)",
-     "        rate = median if median else recent_burn"),
+    ("M13 runway divides by the robust median again",
+     "        long_run = window_rate(self.conn, provider, world)",
+     "        long_run = median"),
     ("M14 the spend-report sustain clock is never reset",
      '            self.anomaly_since.pop("spend:" + provider, None)\n'
      '            self.alerter.clear("spend_spike:" + provider)',
      '            self.alerter.clear("spend_spike:" + provider)'),
+    ("M15 a burn happening now is hidden by the long-run average",
+     '        if sustained_burn:\n'
+     '            options.append((sustained_burn, "at the rate of the last {:.0f} min".format(\n'
+     '                BURN_WINDOW_SEC / 60)))',
+     "        pass"),
+    ("M16 one step counts as a burn",
+     "    if elapsed <= 0 or drops < ACUTE_MIN_DROPS or spent <= 0:",
+     "    if elapsed <= 0 or spent <= 0:"),
+    ("M17 an empty balance raises nothing",
+     "        if warm and not postpaid and value is not None and value <= 0:",
+     "        if False:"),
+    ("M18 postpaid debt alerts with no threshold",
+     "            if ratio >= ANOMALY_RATIO:\n"
+     '                self.alerter.fire(\n'
+     '                    "debt:" + provider, "warn", provider,',
+     "            if True:\n"
+     '                self.alerter.fire(\n'
+     '                    "debt:" + provider, "warn", provider,'),
+    ("M19 an outage keeps the sustain clock running",
+     "            self.anomaly_since.pop(provider, None)\n"
+     '            self.anomaly_since.pop("spend:" + provider, None)\n'
+     "            self._health(provider, record)",
+     "            self._health(provider, record)"),
+    ("M20 a new world inherits the old world's cooldown",
+     '            self.conn.execute("DELETE FROM alert_state")',
+     "            pass"),
+    ("M21 spend-report baseline goes back to its own derivative",
+     "        median = current / window_hours",
+     "        median = 0.0"),
+    ("M22 a stopped collector still reads healthy",
+     '            "healthy": bool(last and last["ok"] and now() - last["ts"] < STALE_FAILURES * POLL_INTERVAL),',
+     '            "healthy": bool(last and last["ok"]),'),
 ]
 
 

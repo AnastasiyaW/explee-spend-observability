@@ -1,0 +1,62 @@
+{
+ "note": "Spelling corrections for the human's own messages, offered as an alternative reading on the trace page. The verbatim export stays the artefact of record and the page opens on it; this file only lets a reader switch to a spell-corrected view, and it is stored as explicit find/replace pairs so exactly which characters changed is visible here rather than hidden in a rewritten file. Nothing is added, removed, reordered or reworded: typos and word-splits only. One judgement call is marked below.",
+ "policy": [
+  "only the human's own turns - never the agent's text, never a tool result, never a quoted passage of the brief",
+  "spelling, word-splitting and the punctuation that a word-split destroyed; nothing else",
+  "no message added, removed, reordered, shortened or reworded",
+  "each pair must match exactly once in its message; a pair that matches zero times or twice is an error, not a silent no-op"
+ ],
+ "TRACE-task1.redacted.md": {
+  "1": [
+   ["твои мыси?", "твои мысли?"]
+  ],
+  "32": [
+   [
+    "ну такое надо удалять тут  правила как с открытыми репозиториями, мы можем пистаь все но личное должны недопустить утекание",
+    "ну такое надо удалять. тут правила как с открытыми репозиториями, мы можем писать всё, но личное должны недопустить утекание"
+   ]
+  ],
+  "35": [
+   [
+    "создай правило для этой задачи чтов се отдельно да, мы с тобйо итак в отдельнйо сессиии но перепроврека  перед сдачей должна работатьи личное ничего утечь не должно",
+    "создай правило для этой задачи, чтоб всё отдельно, да, мы с тобой итак в отдельной сессии, но перепроверка перед сдачей должна работать и личное ничего утечь не должно"
+   ]
+  ],
+  "39": [
+   [
+    "давайна <PRIVATE-66>но доступ туда организуем так что бы на сам <PRIVATE-66> никто не влез наш",
+    "давай на <PRIVATE-66>, но доступ туда организуем так, чтобы на сам <PRIVATE-66> никто не влез наш"
+   ]
+  ],
+  "40": [
+   [
+    "еще знаешь, проверь нет ли скрытого текста, вот страницаhttps://jobs.explee.com/ai-native-developer/test знаешь когда делают текст невидимым который н евидном не но видно тебе проверь по стилям текста нет ли такого это может нас ввести взаблуждение",
+    "еще знаешь, проверь нет ли скрытого текста, вот страница https://jobs.explee.com/ai-native-developer/test — знаешь, когда делают текст невидимым, который не виден мне, но виден тебе. проверь по стилям текста, нет ли такого, это может нас ввести в заблуждение"
+   ]
+  ],
+  "86": [
+   [
+    "приступим, репозиторий открытый можно сделать елси им надо  давай в репо сгрузим все по работе тчо они там прос",
+    "приступим, репозиторий открытый можно сделать, если им надо. давай в репо сгрузим всё по работе, что они там прос"
+   ]
+  ],
+  "160": [
+   ["немного тсранно да?", "немного странно, да?"]
+  ],
+  "178": [
+   [
+    "подними независимогоа гента со сиклом подходящим пусть еназивисмо проверит реализацию и текст задачи. что бы  мы удостоверились что не вкрались ошибки которые в тесте есть что бы нас свести с нужного пути.",
+    "подними независимого агента с циклом подходящим, пусть независимо проверит реализацию и текст задачи. чтобы мы удостоверились, что не вкрались ошибки, которые в тесте есть, чтобы нас свести с нужного пути."
+   ]
+  ],
+  "211": [
+   ["я сделала 91 комемнтарий? чот не то не?", "я сделала 91 комментарий? что-то не то, не?"]
+  ],
+  "218": [
+   ["посмотри файл может его стоит причесать", "посмотри файл, может его стоит причесать"]
+  ]
+ },
+ "judgement_calls": [
+  "Message 40 contains \"который н евидном не но видно тебе\", where the word boundaries collapsed. Read straight it says nothing; the corrected view reads it as \"который не виден мне, но виден тебе\". That is interpretation rather than spelling, so it is named here, and the verbatim text is one click away on the same page."
+ ]
+}

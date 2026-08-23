@@ -74,6 +74,7 @@ ANOMALY_SUSTAIN_SEC = 600    # their example says "sustained 20min"; fire at hal
 RUNWAY_WARN_H = 24.0
 RUNWAY_CRIT_H = 6.0
 STALE_FAILURES = 3           # three consecutive misses is an outage, one is a hiccup
+ACUTE_MIN_DROPS = 3          # a burn moves the balance repeatedly; one step moves it once
 REALERT_COOLDOWN_SEC = 1800  # one line per problem per half hour, unless it escalates
 MAX_BACKOFF_SEC = 300
 SNAPSHOT_INTERVAL_SEC = 30   # the snapshot is published every 5 min; rewriting it every
@@ -533,29 +534,50 @@ def baseline_rate(conn, provider: str, world: dict, window=None, buckets=8):
     return statistics.median(rates), len(rates)
 
 
-def publishable_rate(conn, provider: str, world: dict, median, bucket_count):
-    """The only rate runway may be divided by. Returns None when there is none.
+def window_rate(conn, provider: str, world: dict):
+    """The long-run rate: everything spent over the whole baseline window.
 
-    `baseline_rate` returns the bucket count precisely so a caller can tell "no
-    baseline yet" from "a baseline of zero" - and testing the median for
-    truthiness throws that distinction straight back away. The median reaches
-    exactly 0.0 whenever more than half the buckets saw no drop at all, which is
-    an account that steps less often than a bucket is wide. Falling back to the
-    15-minute burn there is the duty-cycle error a third time, and the worst one
-    yet: measured on a four-hourly stepper it read 450/h against a true 12.5/h
-    and published "2.1h of runway left, top up now" for an account 76 hours from
-    empty.
-
-    When the median is zero the honest denominator is the aggregate over the
-    whole baseline window. It is still a rate and it still counts the flat
-    stretches; it is simply not robust - which is the right trade exactly when
-    most of the samples ARE the flat stretches.
+    This is what runway should be divided by, and the median of bucket rates is
+    not. The median is robust, which is exactly what a BASELINE wants and
+    exactly what a DENOMINATOR does not: on an account that steps every forty
+    minutes the median of half-hour buckets reads 101/h where the truth is 75/h,
+    and when it steps more slowly than a bucket is wide the median is 0.0 and
+    the old code fell back to the fifteen-minute burn - 450/h against a true
+    12.5/h, publishing "2.1h left, top up now" for an account 76 hours from
+    empty. The aggregate has neither failure: it counts every drop and every
+    flat second between them.
     """
-    if median is None or bucket_count < 3:
-        return None
-    if median > 0:
-        return median
-    return spend_rate(conn, provider, now() - BASELINE_WINDOW_SEC, world) or 0.0
+    return spend_rate(conn, provider, now() - BASELINE_WINDOW_SEC, world)
+
+
+def acute_rate(conn, provider: str, world: dict):
+    """The rate of a burn that is happening now - or nothing, if it is one step.
+
+    Returns (rate, dropping_intervals). The rate is None unless the balance fell
+    across at least ACUTE_MIN_DROPS separate intervals inside the burn window.
+
+    That test is the whole difference between the two mistakes this file has
+    made. One coarse step inside the window looks identical to a fast burn if
+    you only divide: both give a large number. A burn moves the balance again
+    and again; a step moves it once and then sits flat. Counting the intervals
+    separates them without needing to know the account's habits.
+    """
+    rows = _readings(conn, provider, now() - BURN_WINDOW_SEC, world)
+    if len(rows) < 2:
+        return None, 0
+    spent, elapsed, drops = 0.0, 0.0, 0
+    for prev, cur in zip(rows, rows[1:]):
+        seconds = cur["ts"] - prev["ts"]
+        if seconds <= 0:
+            continue
+        elapsed += seconds
+        drop = prev["value"] - cur["value"]
+        if drop > 0:
+            spent += drop
+            drops += 1
+    if elapsed <= 0 or drops < ACUTE_MIN_DROPS or spent <= 0:
+        return None, drops
+    return spent / (elapsed / 3600.0), drops
 
 
 def reading_count(conn, provider: str, world: dict, window=None) -> int:
@@ -585,6 +607,14 @@ class Analyzer:
 
     def on_sample(self, provider, catalog_entry, record, world, shape_history=None):
         if not record["ok"]:
+            # An outage is not a sustained anomaly. Both detectors clear their
+            # clock when the burst ends, and this early return used to skip
+            # both: set the clock, go dark for half an hour, come back with one
+            # sample above the threshold, and it fired instantly claiming to
+            # have watched a burst for the whole outage - during which nothing
+            # was measured at all.
+            self.anomaly_since.pop(provider, None)
+            self.anomaly_since.pop("spend:" + provider, None)
             self._health(provider, record)
             return
         self.fail_streak[provider] = 0
@@ -644,6 +674,16 @@ class Analyzer:
 
         A trailing total is not a rate. Its DERIVATIVE is. Spend accrued per hour
         is how fast the number climbs, and that is comparable across time.
+
+        The baseline, however, cannot be that derivative's own median. A
+        trailing window falls as much as it rises, because old spend ages out of
+        it: measured over our own seven hours, anthropic's trailing-24h figure
+        fell on 768 of 1,148 readings and meta_ads' on 541 of 1,161. `climb`
+        floors those at zero, so most buckets are zero, the median is zero, and
+        the detector returned before comparing anything. The baseline is instead
+        the rate the level itself implies - a trailing 24h total of X means an
+        average of X/24 per hour. That number always exists, cannot be zeroed by
+        the window sliding, and is what "normal" means for this shape of data.
         """
         column = "spend_30d" if record["spend_30d"] is not None else "spend_24h"
         current = record[column]
@@ -667,17 +707,9 @@ class Analyzer:
             return max(0.0, subset[-1]["v"] - subset[0]["v"]) / (seconds / 3600.0)
 
         recent = climb([r for r in rows if r["ts"] >= now() - BURN_WINDOW_SEC])
-        buckets, width = [], BASELINE_WINDOW_SEC / 8
-        start = now() - BASELINE_WINDOW_SEC
-        for i in range(8):
-            lo = start + i * width
-            rate = climb([r for r in rows if lo <= r["ts"] <= lo + width])
-            if rate is not None:
-                buckets.append(rate)
-        if recent is None or len(buckets) < 3:
-            return
-        median = statistics.median(buckets)
-        if median <= 0 or recent / median < ANOMALY_RATIO:
+        window_hours = 24.0 if column == "spend_24h" else 30 * 24.0
+        median = current / window_hours
+        if recent is None or median <= 0 or recent / median < ANOMALY_RATIO:
             # Drop the sustain clock too. Leaving it set - which is exactly what
             # _balance below is careful NOT to do - permanently satisfies the
             # ten-minute requirement after the first blip: a later single sample
@@ -692,18 +724,21 @@ class Analyzer:
             return
         self.alerter.fire(
             "spend_spike:" + provider, "critical", provider,
-            "{}: cost accruing {:.2f} {}/h against a normal of {:.2f} ({:.1f}x), sustained {:.0f} min. "
-            "Trailing total now {:.2f}. No balance is exposed here, so this rate is the only signal "
-            "this account gives.".format(provider, recent, record["unit"] or "", median,
-                                         recent / median, sustained / 60, current),
+            "{}: cost accruing {:.2f} {}/h against the {:.0f}h average of {:.2f} {}/h its own total "
+            "implies ({:.1f}x), sustained {:.0f} min. Trailing total now {:.2f}. No balance is "
+            "exposed here, so this rate is the only signal this account gives.".format(
+                provider, recent, record["unit"] or "", window_hours, median, record["unit"] or "",
+                recent / median, sustained / 60, current),
             accrual_per_h=round(recent, 4), baseline_per_h=round(median, 4),
-            ratio=round(recent / median, 2), trailing_total=current, metric=column)
+            ratio=round(recent / median, 2), trailing_total=current, metric=column,
+            baseline_basis="{:.0f}h average implied by the trailing total".format(window_hours))
 
     # -- balance-bearing providers ----------------------------------------
     def _balance(self, provider, record, world):
         value, unit = record["value"], record["unit"] or ""
-        recent_burn = spend_rate(self.conn, provider, now() - BURN_WINDOW_SEC, world) or 0.0
+        postpaid = record["model"] == "postpaid"
         median, bucket_count = baseline_rate(self.conn, provider, world)
+        sustained_burn, drops = acute_rate(self.conn, provider, world)
         samples = reading_count(self.conn, provider, world)
 
         # Warm-up guards EVERY threshold, not just the anomaly one. With two
@@ -711,61 +746,102 @@ class Analyzer:
         # runway left, top up now" from a single interval.
         warm = samples >= WARMUP_BURN_SAMPLES and bucket_count >= 3
 
-        # anomaly: sustained, and only once a baseline exists worth comparing to
+        # anomaly: sustained, and against a baseline that exists.
+        #
+        # The comparison is between the SUSTAINED recent rate and the robust
+        # median. Using the plain 15-minute rate here fires on every step a
+        # coarse account takes; requiring the median to be non-zero instead
+        # silences those accounts completely, which is how a 6000/h burst
+        # against a flat four-hour baseline raised nothing at all. The shape
+        # test separates the two cases: a burn moves several intervals in a
+        # row, a step moves one.
         key = "burn_anomaly:" + provider
-        if warm and median and recent_burn > 0:
-            ratio = recent_burn / median if median > 0 else math.inf
+        if warm and median is not None and sustained_burn and not postpaid:
+            ratio = sustained_burn / median if median > 0 else math.inf
             if ratio >= ANOMALY_RATIO:
                 first = self.anomaly_since.setdefault(provider, now())
-                sustained = now() - first
-                if sustained >= ANOMALY_SUSTAIN_SEC:
-                    runway = value / recent_burn if recent_burn > 0 else None
+                elapsed = now() - first
+                if elapsed >= ANOMALY_SUSTAIN_SEC:
+                    runway = value / sustained_burn if sustained_burn > 0 else None
                     self.alerter.fire(
                         key, "critical", provider,
-                        "{}: spend {:.2f} {}/h against a normal of {:.2f} ({:.1f}x), sustained {:.0f} min. "
+                        "{}: spend {:.2f} {}/h against a normal of {:.2f} ({}), sustained {:.0f} min. "
                         "Balance {:.2f}, which at this rate is {} of runway.".format(
-                            provider, recent_burn, unit, median, ratio, sustained / 60, value,
+                            provider, sustained_burn, unit, median,
+                            "no prior spend at all" if median <= 0 else "{:.1f}x".format(ratio),
+                            elapsed / 60, value,
                             "{:.1f}h".format(runway) if runway else "unknown"),
-                        burn_per_h=round(recent_burn, 4), baseline_per_h=round(median, 4),
-                        ratio=round(ratio, 2), sustained_min=round(sustained / 60, 1),
-                        balance=value, unit=unit)
+                        burn_per_h=round(sustained_burn, 4), baseline_per_h=round(median, 4),
+                        ratio=None if median <= 0 else round(ratio, 2),
+                        sustained_min=round(elapsed / 60, 1), balance=value, unit=unit)
             else:
                 self.anomaly_since.pop(provider, None)
                 self.alerter.clear(key)
         else:
             self.anomaly_since.pop(provider, None)
 
+        # exhausted: the account with nothing left is the one that must not be
+        # silent. A strict `value > 0` on the runway branch below meant a
+        # balance of 0.01 raised a critical and a balance of 0.00 raised
+        # nothing, which is exactly backwards.
+        if warm and not postpaid and value is not None and value <= 0:
+            self.alerter.fire("runway:" + provider, "critical", provider,
+                              "{}: balance is {:.2f} {} - this account is empty, not slow. "
+                              "Anything it was paying for is failing now.".format(provider, value, unit),
+                              balance=value, unit=unit, runway_h=0.0)
+
         # runway: the one number comparable across usd, gbp and credits.
-        # Never the 15-minute burn - see publishable_rate for what that cost.
-        rate = publishable_rate(self.conn, provider, world, median, bucket_count)
-        if warm and rate and rate > 0 and value is not None and value > 0:
+        #
+        # Two rates, and the shorter answer wins. The window aggregate is the
+        # honest long-run rate and the only one that survives a duty cycle; a
+        # burn happening RIGHT NOW is invisible to it, because fifteen minutes
+        # of 4000/h barely moves a four-hour average. Publishing only the
+        # aggregate turned a false critical into a silent account that empties
+        # in two hours, which is the worse of the two mistakes.
+        long_run = window_rate(self.conn, provider, world)
+        options = [(long_run, "over the last {:.0f}h".format(BASELINE_WINDOW_SEC / 3600))]
+        if sustained_burn:
+            options.append((sustained_burn, "at the rate of the last {:.0f} min".format(
+                BURN_WINDOW_SEC / 60)))
+        options = [(r, why) for r, why in options if r and r > 0]
+        if warm and options and value is not None and value > 0:
+            rate, why = min(options, key=lambda pair: value / pair[0])
             hours = value / rate
             rkey = "runway:" + provider
             if hours <= RUNWAY_CRIT_H:
                 self.alerter.fire(rkey, "critical", provider,
-                                  "{}: {:.1f}h of runway left - {:.2f} {} at {:.2f} {}/h. Top up now."
-                                  .format(provider, hours, value, unit, rate, unit),
+                                  "{}: {:.1f}h of runway left - {:.2f} {} at {:.2f} {}/h {}. Top up now."
+                                  .format(provider, hours, value, unit, rate, unit, why),
                                   runway_h=round(hours, 2), balance=value, burn_per_h=round(rate, 4),
-                                  unit=unit)
+                                  basis=why, unit=unit)
             elif hours <= RUNWAY_WARN_H:
-                self.alerter.fire(rkey, "warn",
-                                  provider,
-                                  "{}: {:.1f}h of runway - {:.2f} {} at {:.2f} {}/h.".format(
-                                      provider, hours, value, unit, rate, unit),
+                self.alerter.fire(rkey, "warn", provider,
+                                  "{}: {:.1f}h of runway - {:.2f} {} at {:.2f} {}/h {}.".format(
+                                      provider, hours, value, unit, rate, unit, why),
                                   runway_h=round(hours, 2), balance=value,
-                                  burn_per_h=round(rate, 4), unit=unit)
+                                  burn_per_h=round(rate, 4), basis=why, unit=unit)
             else:
                 self.alerter.clear(rkey)
 
-        # postpaid debt: no floor to run out of, so the signal is the debt itself
-        if warm and record["model"] == "postpaid" and value is not None and value < 0:
-            debt_rate = rate or 0.0
-            if debt_rate > 0:
+        # postpaid debt: no floor to run out of, so the rate is the only signal
+        # - and a STEADY rate is not one. The first version alerted on any
+        # growing debt, which for an account whose debt always grows meant a
+        # warn every cooldown forever: twelve identical lines, 17% of every
+        # alert the system had written. Now it fires when the growth breaks
+        # from its own normal, which is the same test the anomaly detector
+        # uses, worded for an account that cannot run out.
+        if warm and postpaid and value is not None and value < 0 and sustained_burn and median:
+            ratio = sustained_burn / median
+            if ratio >= ANOMALY_RATIO:
                 self.alerter.fire(
                     "debt:" + provider, "warn", provider,
-                    "{}: postpaid debt at {:.2f} {} and growing {:.2f} {}/h. Negative is normal here; "
-                    "the rate is what matters.".format(provider, value, unit, debt_rate, unit),
-                    debt=value, rate_per_h=round(debt_rate, 4), unit=unit)
+                    "{}: postpaid debt at {:.2f} {}, growing {:.2f} {}/h against a normal of {:.2f} "
+                    "({:.1f}x). Negative is normal here; the acceleration is not.".format(
+                        provider, value, unit, sustained_burn, unit, median, ratio),
+                    debt=value, rate_per_h=round(sustained_burn, 4),
+                    baseline_per_h=round(median, 4), ratio=round(ratio, 2), unit=unit)
+            else:
+                self.alerter.clear("debt:" + provider)
 
         # credits: a package that will not survive to its own refresh date
         if record["model"] == "credits_package" and record["capacity"]:
@@ -870,6 +946,14 @@ class Monitor:
         previous = dict(self.world)
         self.world = {"world_epoch": epoch, "fingerprint": fingerprint}
         if previous["fingerprint"] and previous != self.world:
+            self.analyzer.anomaly_since.clear()
+            self.analyzer.fail_streak.clear()
+            # "Measurement restarts here" has to include the suppression state,
+            # and it has to be cleared BEFORE the reset alert is written: a
+            # cooldown row belonging to a world that no longer exists otherwise
+            # swallows the very alert announcing that the world is gone.
+            self.conn.execute("DELETE FROM alert_state")
+            self.conn.commit()
             self.alerter.fire(
                 "world:reset", "critical", "",
                 "the stand reset its world: epoch {} -> {}, fingerprint {} -> {}. Every balance "
@@ -878,7 +962,6 @@ class Monitor:
                     previous["world_epoch"], self.world["world_epoch"],
                     previous["fingerprint"], self.world["fingerprint"]),
                 previous=previous, current=self.world)
-            self.analyzer.anomaly_since.clear()
         self.conn.execute(
             "INSERT OR IGNORE INTO worlds(first_seen, world_epoch, fingerprint) VALUES(?,?,?)",
             (now(), self.world["world_epoch"], self.world["fingerprint"]))
@@ -1081,11 +1164,13 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
                 (provider, now() - BASELINE_WINDOW_SEC, *identity)).fetchone()[0]
         warm = samples_in_world >= WARMUP_BURN_SAMPLES and buckets >= 3
         value = last_ok["value"] if last_ok else None
-        # The same denominator the alerting layer uses, for the same reason.
-        rate = publishable_rate(conn, provider, world, median, buckets)
-        # A runway derived from a baseline the alerting layer would refuse to
-        # act on must not be published as if it were solid.
-        runway = (value / rate) if (warm and rate and value and value > 0) else None
+        # The same two rates the alerting layer weighs, and the same rule: the
+        # shorter answer is the one worth showing, because it is the one that
+        # runs out first. A runway derived from a baseline the alerting layer
+        # would refuse to act on must not be published as if it were solid.
+        acute, _drops = acute_rate(conn, provider, world)
+        rates = [r for r in (window_rate(conn, provider, world), acute) if r and r > 0]
+        runway = (value / max(rates)) if (warm and rates and value and value > 0) else None
         series = conn.execute(
             "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
             "AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts",
@@ -1102,7 +1187,11 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
             "baseline_per_h": round(median, 4) if median else None,
             "runway_h": round(runway, 2) if runway else None,
             "warm": warm,
-            "healthy": bool(last and last["ok"]),
+            # Healthy has to mean "answering NOW". Without the age bound a
+            # stopped collector paints the whole board green: the last row is
+            # still ok=1, so every account reads healthy for as long as the
+            # snapshot survives. Three missed polls is not a hiccup.
+            "healthy": bool(last and last["ok"] and now() - last["ts"] < STALE_FAILURES * POLL_INTERVAL),
             "last_error": (last["error"] if last and not last["ok"] else None),
             "last_seen": iso(last["ts"]) if last else None,
             "last_ok_seen": iso(last_ok["ts"]) if last_ok else None,
@@ -1168,7 +1257,8 @@ def self_test() -> int:
                  kw.get("http_status"), kw.get("latency_ms"), model, kw.get("unit", "usd"), value,
                  kw.get("capacity"), kw.get("spend_24h"), kw.get("refresh"), kw.get("error"),
                  kw.get("shape")))
-            conn.commit()
+            # Deliberately no commit: this connection reads its own open
+            # transaction, and 566 fsyncs cost 10 of the suite's 12 seconds.
 
         # --- API statistics describe recorded reads, including failures ------
         insert("api-ok", now() - 2, 10.0, http_status=200, latency_ms=3.0)
@@ -1366,8 +1456,8 @@ def self_test() -> int:
         # --- warm-up is the ONLY thing holding this one back ----------------
         # Nine readings clustered into three buckets: enough buckets for a real
         # baseline, not enough samples for the warm-up gate. Without the gate
-        # this publishes a runway critical off nine readings, and publishable_rate
-        # cannot help - it has a perfectly good positive rate to offer.
+        # this publishes a runway critical off nine readings, and no rate guard
+        # can help - the aggregate is perfectly positive here.
         for bucket in (0, 3, 6):
             for j in range(3):
                 ts = base + bucket * 1800 + j * 300
@@ -1402,15 +1492,115 @@ def self_test() -> int:
             failures.append("the coarse-stepper fixture no longer produces a zero median "
                             "({} over {} buckets); the regression it guards is untested".format(
                                 coarse_median, coarse_buckets))
-        coarse_rate = publishable_rate(conn, "coarse", world, coarse_median, coarse_buckets)
+        coarse_rate = window_rate(conn, "coarse", world)
         if coarse_rate is None or abs(coarse_rate - 12.5) > 2.0:
-            failures.append("a zero median must fall back to the window aggregate (~12.5/h), "
-                            "not the 15-minute burn: got {}".format(coarse_rate))
+            failures.append("the window aggregate must read ~12.5/h here, not the 15-minute "
+                            "burn: got {}".format(coarse_rate))
+        coarse_acute, coarse_drops = acute_rate(conn, "coarse", world)
+        if coarse_acute is not None or coarse_drops != 1:
+            failures.append("one step is not a burn: acute_rate returned {} over {} dropping "
+                            "intervals".format(coarse_acute, coarse_drops))
         analyzer.on_sample("coarse", {"pay_model": "prepaid_balance"}, sample(950.0), world)
         coarse_alerts = [a for a in lines() if a["provider"] == "coarse"]
         if coarse_alerts:
             failures.append("an account 76h from empty raised {}: {}".format(
                 coarse_alerts[0]["kind"], coarse_alerts[0]["text"][:90]))
+
+        # --- ...and the same account, actually burning, must NOT be silent ---
+        # The window aggregate alone reads 251/h here and publishes 35.8h of
+        # runway while the account empties in two. The fix for the false
+        # critical above traded it for this silence until the acute rate was
+        # weighed alongside the aggregate.
+        for i in range(40):                      # 3h45 flat at 10000
+            insert("acute", now() - 4 * 3600 + i * step, 10000.0)
+        for i in range(10):                      # then 1000 burned in the last 15 min
+            insert("acute", now() - 900 + i * 90, 10000.0 - (i + 1) * 100.0)
+        acute_burn, acute_drops = acute_rate(conn, "acute", world)
+        if acute_burn is None or abs(acute_burn - 4000) > 400 or acute_drops < ACUTE_MIN_DROPS:
+            failures.append("a real burn was not recognised: {} over {} dropping intervals".format(
+                acute_burn, acute_drops))
+        analyzer.on_sample("acute", {"pay_model": "prepaid_balance"}, sample(9000.0), world)
+        acute_alerts = [a for a in lines() if a["provider"] == "acute" and a["kind"] == "runway"]
+        if not acute_alerts:
+            failures.append("an account emptying in 2.3h raised nothing; the long-run average "
+                            "hid a burn happening right now")
+        elif acute_alerts[0]["level"] != "critical":
+            failures.append("the imminent-exhaustion alert was not critical")
+
+        # --- the runway denominator is the aggregate, not the median ---------
+        # A 40-minute stepper: true rate 75/h, but the median of half-hour
+        # buckets reads ~101/h because the buckets that saw no step contribute
+        # nothing to the middle of the distribution. Dividing by the median
+        # under-reports runway by a third and quietly raises this account's
+        # anomaly threshold from 4x to an effective 5.4x.
+        for i in range(6):
+            insert("stepper", now() - 4 * 3600 + i * 2400, 10000.0 - i * 50.0)
+            for j in range(1, 8):                # flat readings between the steps
+                insert("stepper", now() - 4 * 3600 + i * 2400 + j * 300, 10000.0 - i * 50.0)
+        step_median, _ = baseline_rate(conn, "stepper", world)
+        step_window = window_rate(conn, "stepper", world)
+        if step_window is None or abs(step_window - 75.0) > 12.0:
+            failures.append("the window aggregate on a 40-minute stepper is {} - expected ~75/h"
+                            .format(step_window))
+        if step_median is None or step_median <= step_window * 1.15:
+            failures.append("the stepper fixture no longer separates median from aggregate "
+                            "({} vs {}); the regression it guards is untested".format(
+                                step_median, step_window))
+        stepper_view = write_snapshot(conn, world, root / "stepper.json")
+        published = next(p for p in stepper_view["providers"] if p["provider"] == "stepper")
+        expected_h = 9750.0 / step_window
+        if published["runway_h"] is None or abs(published["runway_h"] - expected_h) > 0.05 * expected_h:
+            failures.append("published runway {} does not come from the window aggregate "
+                            "({:.1f}h expected)".format(published["runway_h"], expected_h))
+        # ...and the difference has to change an ALERT, not only a published
+        # number. 2100 left at the true 75/h is 28 hours and silence; divided by
+        # the median's ~101/h it is 20.8 hours and a warn nobody needed.
+        for i in range(6):
+            insert("stepper-quiet", now() - 4 * 3600 + i * 2400, 2400.0 - i * 50.0)
+            for j in range(1, 8):
+                insert("stepper-quiet", now() - 4 * 3600 + i * 2400 + j * 300, 2400.0 - i * 50.0)
+        analyzer.on_sample("stepper-quiet", {"pay_model": "prepaid_balance"}, sample(2100.0), world)
+        if any(a["provider"] == "stepper-quiet" for a in lines()):
+            failures.append("a 28-hour account raised a runway warn; that happens only when the "
+                            "denominator is the median instead of the aggregate")
+
+        # --- a balance of exactly zero is the loudest case, not the quietest --
+        for i in range(30):
+            insert("empty", base + i * step, 60.0 - i * 2.0)
+        insert("empty", now() - 30, 0.0)
+        analyzer.on_sample("empty", {"pay_model": "prepaid_balance"}, sample(0.0), world)
+        empties = [a for a in lines() if a["provider"] == "empty"]
+        if not empties:
+            failures.append("a balance of exactly 0.00 raised nothing while 0.01 raises a critical")
+        elif empties[0]["level"] != "critical":
+            failures.append("an empty account was not critical")
+
+        # --- steady postpaid debt is normal operations, not an alert ---------
+        # Twelve identical vastai warns - 17% of every alert written - came from
+        # a detector with no threshold at all.
+        for i in range(40):                      # debt growing steadily, 6/h
+            insert("owing", base + i * step, -100.0 - i * 0.5, model="postpaid")
+        for i in range(9):                       # ...still 6/h inside the burn window,
+            insert("owing", now() - 900 + i * 100,   # so the acute rate exists and matches
+                   -120.0 - (i + 1) * 0.1667, model="postpaid")
+        analyzer.on_sample("owing", {"pay_model": "postpaid"}, sample(-120.0, model="postpaid"), world)
+        if any(a["provider"] == "owing" for a in lines()):
+            failures.append("steady postpaid debt alerted; the catalog calls negative normal here")
+        for i in range(30):                      # now it accelerates, 20x
+            insert("owing", now() - 800 + i * 26, -121.5 - i * 4.0, model="postpaid")
+        analyzer.on_sample("owing", {"pay_model": "postpaid"}, sample(-240.0, model="postpaid"), world)
+        if not any(a["provider"] == "owing" and a["kind"] == "debt" for a in lines()):
+            failures.append("accelerating debt raised nothing; the rate is the only signal here")
+
+        # --- an outage is not a sustained burst ------------------------------
+        analyzer.anomaly_since["outage"] = now() - 4200
+        analyzer.on_sample("outage", {}, {"ok": False, "error": "http 500", "model": "prepaid_balance",
+                                          "unit": "usd", "value": None, "capacity": None,
+                                          "spend_24h": None, "spend_30d": None, "refresh": None,
+                                          "shape": "http-500"}, world)
+        if "outage" in analyzer.anomaly_since:
+            failures.append("a failed read left the sustain clock running; the next sample would "
+                            "claim to have watched a burst through an outage")
 
         # --- the headline detector: sustained spend well above normal -------
         for i in range(30):                      # calm: 0.1 per 5 min = 1.2/h
@@ -1455,6 +1645,25 @@ def self_test() -> int:
         if not any(a["kind"] == "spend_spike" for a in lines()):
             failures.append("a spend-report account with a 50x accrual burst raised nothing; "
                             "that detector was unreachable before")
+
+        # --- and it must survive the regime the stand actually produces ------
+        # A trailing window falls as old spend ages out: measured over our own
+        # seven hours, anthropic's trailing-24h figure fell on 768 of 1,148
+        # readings. A baseline built from that series' own derivative is zero
+        # most of the time, and the detector returned before comparing. The
+        # level-implied average cannot be zeroed that way.
+        for i in range(40):                      # the total DRIFTS DOWN all window
+            insert("falling", base + i * step, None, model="spend_report",
+                   spend_24h=400.0 - i * 2.0)
+        for i in range(8):                       # then real spend, ~900/h
+            insert("falling", now() - 800 + i * 100, None, model="spend_report",
+                   spend_24h=320.0 + i * 25.0)
+        analyzer.anomaly_since["spend:falling"] = now() - (ANOMALY_SUSTAIN_SEC + 60)
+        analyzer.on_sample("falling", {"pay_model": "spend_report"},
+                           sample(None, model="spend_report", spend_24h=495.0), world)
+        if not any(a["provider"] == "falling" and a["kind"] == "spend_spike" for a in lines()):
+            failures.append("a burst on a DECLINING trailing total raised nothing; that is the "
+                            "regime both spend-report accounts are actually in")
 
         # --- and the sustain clock must reset when the burst ends -----------
         # _balance pops this key; _spend_report did not. A clock that is never
@@ -1534,6 +1743,24 @@ def self_test() -> int:
                    alerts_path.read_text(encoding="utf-8").splitlines()):
             failures.append("world reset produced no alert")
 
+        # --- a new world starts with a clean cooldown, not the old one -------
+        # "Measurement restarts here" has to include suppression. A carried-over
+        # alert_state row swallowed the first alert of the new world for half an
+        # hour, silently, on the exact key most likely to matter.
+        alerter.fire("runway:carried", "critical", "carried", "world one")
+        before_reset = len(lines())
+        meta_replies = iter([(200, '{"world_epoch": 9.0, "fingerprint": "brand-new"}', 1.0, None)])
+        globals()["http_get"] = lambda *_a, **_k: next(meta_replies)
+        try:
+            mon.world = {"world_epoch": 1.0, "fingerprint": "aaa"}
+            mon.refresh_meta()
+        finally:
+            globals()["http_get"] = original_http_get
+        alerter.fire("runway:carried", "critical", "carried", "world two, must be heard")
+        if len(lines()) != before_reset + 2:      # the reset alert, then the re-fire
+            failures.append("the first alert of a new world was suppressed by the previous "
+                            "world's cooldown")
+
         # --- a snapshot is one world, not an optimistic splice of two --------
         # `old-only` must disappear entirely. `reset-scope` has an old good row
         # but a current failure, so old data must not make it green. A
@@ -1557,6 +1784,16 @@ def self_test() -> int:
             failures.append("snapshot made prior-world data look healthy or current")
         if report.get("samples") != 1 or report.get("series"):
             failures.append("snapshot mixed prior-world spend-report samples into current data")
+
+        # --- a stopped collector must not paint the board green --------------
+        # The last row stays ok=1 forever, so without an age bound every account
+        # reads healthy for as long as the snapshot file survives - and the
+        # standalone `snapshot` command produces exactly that file.
+        insert("stopped", now() - 6 * 3600, 500.0)
+        stale_view = write_snapshot(conn, world, root / "stale-data.json")
+        stopped = next(p for p in stale_view["providers"] if p["provider"] == "stopped")
+        if stopped["healthy"]:
+            failures.append("a provider last read six hours ago is published as healthy")
 
         snapshot = write_snapshot(conn, world, root / "data.json")
         if not snapshot["providers"]:

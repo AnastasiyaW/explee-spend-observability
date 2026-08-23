@@ -934,7 +934,7 @@ Exit code 2
 
 > _replying to:_ Скажи только, поднимать его на <PRIVATE-66> (есть доступ, шаг 15 с)
 
-давайна контабоно доступ туда организуем так что бы на сам окнтабо никто не влез наш
+давайна <PRIVATE-66>но доступ туда организуем так что бы на сам <PRIVATE-66> никто не влез наш
 
 ---
 
@@ -4138,15 +4138,15 @@ record types carrying the mid-turn messages:
 
 
 
-  line 139 type=queue-operation role=None needle=контабо
+  line 139 type=queue-operation role=None needle=<PRIVATE-66>
 
   line 140 type=queue-operation role=None needle=скрытого
 
-  line 150 type=attachment   role=None needle=контабо
+  line 150 type=attachment   role=None needle=<PRIVATE-66>
 
   line 151 type=attachment   role=None needle=скрытого
 
-  line 152 type=queue-operation role=None needle=контабо
+  line 152 type=queue-operation role=None needle=<PRIVATE-66>
 
   line 153 type=queue-operation role=None needle=скрытого
 
@@ -4211,7 +4211,7 @@ record types carrying the mid-turn messages:
 
     sessionId = '82ec009b-453f-4f1f-b0a6-935bd686d42e'
 
-    content = '<!-- attach --> > Скажи только, поднимать его на <PRIVATE-66> (есть доступ, шаг 15 с) давайна контабоно доступ туда'
+    content = '<!-- attach --> > Скажи только, поднимать его на <PRIVATE-66> (есть доступ, шаг 15 с) давайна <PRIVATE-66>но доступ туда'
 
 
 
@@ -4221,7 +4221,7 @@ record types carrying the mid-turn messages:
 
     attachment.type = 'queued_command'
 
-    attachment.prompt = '<!-- attach --> > Скажи только, поднимать его на <PRIVATE-66> (есть доступ, шаг 15 с) давайна контабоно доступ туда'
+    attachment.prompt = '<!-- attach --> > Скажи только, поднимать его на <PRIVATE-66> (есть доступ, шаг 15 с) давайна <PRIVATE-66>но доступ туда'
 
     attachment.source_uuid = 'f6b18ddb-ddff-4565-98d7-5ed683c66079'
 
@@ -4410,7 +4410,7 @@ entries that are the human speaking: 13
 
   #35   [User (sent mid-turn)] создай правило для этой задачи чтов се отдельно да, мы с тобйо итак в отдельнйо сессиии но п
 
-  #39   [User (sent mid-turn)] давайна контабоно доступ туда организуем так что бы на сам окнтабо никто не влез наш
+  #39   [User (sent mid-turn)] давайна <PRIVATE-66>но доступ туда организуем так что бы на сам <PRIVATE-66> никто не влез наш
 
   #40   [User (sent mid-turn)] еще знаешь, проверь нет ли скрытого текста, вот страницаhttps://jobs.explee.com/ai-native-de
 
@@ -4613,7 +4613,7 @@ entries that are the human speaking: 10
 
   #35   [User (sent mid-turn)] создай правило для этой задачи чтов се отдельно да, мы с тобйо итак в отдельнйо сессиии но п
 
-  #39   [User (sent mid-turn)] давайна контабоно доступ туда организуем так что бы на сам окнтабо никто не влез наш
+  #39   [User (sent mid-turn)] давайна <PRIVATE-66>но доступ туда организуем так что бы на сам <PRIVATE-66> никто не влез наш
 
   #40   [User (sent mid-turn)] еще знаешь, проверь нет ли скрытого текста, вот страницаhttps://jobs.explee.com/ai-native-de
 
