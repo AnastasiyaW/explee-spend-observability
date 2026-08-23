@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spend Observability</title>
+<style>
+  :root{
+    --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
+    --ok:#1a7f4b; --warn:#a86a00; --crit:#b3261e; --accent:#2b5cd9;
+    --grid:#efeee8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+      --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+    --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px}
+  h1{font-size:21px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .sub b{color:var(--ink);font-weight:600}
+  .banner{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:12px 14px;margin:0 0 16px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;
+    align-items:center}
+  .banner .k{color:var(--muted)}
+  .banner code{font:12px/1.4 ui-monospace,"Cascadia Code",Consolas,monospace}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .attn{border-left:3px solid var(--crit)}
+  .cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+    margin:0 0 22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+  .card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .card .big{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-top:3px}
+  .card .note{font-size:12px;color:var(--muted);margin-top:4px}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    margin:26px 0 9px;font-weight:600}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--muted);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);
+    white-space:nowrap}
+  td{padding:9px 12px;border-bottom:1px solid var(--grid);vertical-align:middle}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .prov{font-weight:600}
+  .tag{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+    border:1px solid var(--line);border-radius:20px;padding:1px 7px;white-space:nowrap}
+  .crit{color:var(--crit);font-weight:650}
+  .warn{color:var(--warn);font-weight:600}
+  .ok{color:var(--ok)}
+  .muted{color:var(--muted)}
+  .alerts{background:var(--panel);border:1px solid var(--line);border-radius:10px;
+    padding:4px 0;max-height:420px;overflow-y:auto}
+  .alert{padding:9px 14px;border-bottom:1px solid var(--grid);font-size:13.5px;
+    display:flex;gap:11px;align-items:flex-start}
+  .alert:last-child{border-bottom:0}
+  .alert time{color:var(--muted);font:11.5px/1.6 ui-monospace,Consolas,monospace;white-space:nowrap}
+  .empty{padding:26px 14px;color:var(--muted);font-size:13.5px;text-align:center}
+  footer{margin-top:30px;color:var(--muted);font-size:12.5px;line-height:1.65}
+  footer code{font:11.5px ui-monospace,Consolas,monospace}
+  svg.spark{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p style="margin:0 0 10px"><a href="./" style="color:var(--accent);text-decoration:none;font-size:13px">&larr; all three tasks</a></p>
+  <h1>Spend observability</h1>
+  <p class="sub" id="sub">loading…</p>
+
+  <div class="banner" id="banner"></div>
+  <div class="cards" id="cards"></div>
+
+  <h2>Every account, soonest to run out first</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr>
+        <th>Provider</th><th>Model</th><th class="num">Balance</th>
+        <th class="num">Burn / h</th><th class="num">Normal / h</th>
+        <th class="num">Runway</th><th>Last 6h</th><th>Health</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <h2>Alerts</h2>
+  <div class="alerts" id="alerts"></div>
+
+  <p class="sub" id="standlink" style="margin-top:14px"></p>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA_URLS = [
+  "data.json",
+  "https://raw.githubusercontent.com/AnastasiyaW/explee-spend-observability/data/data.json"
+];
+
+function fmt(n, digits){
+  if (n === null || n === undefined) return "—";
+  const d = digits === undefined ? 2 : digits;
+  return Number(n).toLocaleString("en-US", {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+function hours(h){
+  if (h === null || h === undefined) return "—";
+  if (h < 1) return Math.round(h * 60) + " min";
+  if (h < 48) return h.toFixed(1) + " h";
+  return (h / 24).toFixed(1) + " d";
+}
+function runwayClass(h){
+  if (h === null || h === undefined) return "muted";
+  if (h <= 6) return "crit";
+  if (h <= 24) return "warn";
+  return "ok";
+}
+function spark(series){
+  if (!series || series.length < 2) return '<span class="muted">—</span>';
+  const w = 110, h = 26, vals = series.map(p => p[1]);
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = (hi - lo) || 1;
+  const t0 = series[0][0], t1 = series[series.length-1][0], dt = (t1 - t0) || 1;
+  const pts = series.map(p =>
+    ((p[0]-t0)/dt*w).toFixed(1) + "," + (h - (p[1]-lo)/span*(h-3) - 1.5).toFixed(1)).join(" ");
+  const rising = vals[vals.length-1] > vals[0];
+  return '<svg class="spark" width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" aria-hidden="true">'
+    + '<polyline fill="none" stroke="'+(rising ? "var(--ok)" : "var(--accent)")
+    + '" stroke-width="1.5" stroke-linejoin="round" points="'+pts+'"/></svg>';
+}
+function ago(iso){
+  const secs = (Date.now() - new Date(iso).getTime())/1000;
+  if (secs < 90) return Math.round(secs) + "s ago";
+  if (secs < 5400) return Math.round(secs/60) + " min ago";
+  return (secs/3600).toFixed(1) + " h ago";
+}
+
+function render(d){
+  const ps = d.providers || [];
+  const alerts = d.alerts || [];
+  const stale = Math.round((Date.now() - new Date(d.generated).getTime())/1000);
+
+  document.getElementById("sub").innerHTML =
+    "<b>" + ps.length + "</b> accounts watched · data " + ago(d.generated) +
+    " · <b>" + alerts.length + "</b> alerts on file";
+
+  const w = d.world || {};
+  document.getElementById("banner").innerHTML =
+    '<span><span class="dot" style="background:' + (stale < 180 ? "var(--ok)" : "var(--crit)") + '"></span>'
+    + (stale < 180 ? "collector live" : "collector stale (" + Math.round(stale/60) + " min)") + '</span>'
+    + '<span><span class="k">world</span> <code>' + (w.fingerprint || "?") + '</code></span>'
+    + '<span><span class="k">epoch</span> <code>'
+    + (w.world_epoch ? new Date(w.world_epoch*1000).toISOString().replace(".000Z","Z") : "?") + '</code></span>'
+    + '<span class="k">history resets if either changes</span>';
+
+  // The headline numbers. There is deliberately no single "total spend":
+  // usd, gbp and credits do not add up, and two accounts expose no balance.
+  const withRunway = ps.filter(p => p.runway_h !== null && p.runway_h !== undefined);
+  const soonest = withRunway.length ? withRunway[0] : null;
+  const critical = withRunway.filter(p => p.runway_h <= 6).length;
+  const warning = withRunway.filter(p => p.runway_h > 6 && p.runway_h <= 24).length;
+  const unhealthy = ps.filter(p => !p.healthy);
+  const usdBurn = ps.filter(p => (p.unit||"").toLowerCase() === "usd")
+                    .reduce((s,p) => s + (p.burn_per_h||0), 0);
+
+  document.getElementById("cards").innerHTML = [
+    ['Soonest to run dry', soonest ? hours(soonest.runway_h) : "—",
+     soonest ? soonest.provider : "no burn measured yet", soonest ? runwayClass(soonest.runway_h) : "muted"],
+    ['Accounts under 24h', String(critical + warning),
+     critical + " under 6h", (critical ? "crit" : warning ? "warn" : "ok")],
+    ['USD burn right now', "$" + fmt(usdBurn, 2) + "/h",
+     "usd accounts only — gbp and credits are not summable", "ok"],
+    ['Not reporting', String(unhealthy.length),
+     unhealthy.length ? unhealthy.map(p=>p.provider).join(", ") : "all accounts answering",
+     unhealthy.length ? "warn" : "ok"]
+  ].map(c =>
+    '<div class="card' + (c[3]==="crit" ? " attn" : "") + '"><div class="lbl">' + c[0] + '</div>'
+    + '<div class="big ' + c[3] + '">' + c[1] + '</div><div class="note">' + c[2] + '</div></div>'
+  ).join("");
+
+  document.getElementById("rows").innerHTML = ps.map(p => {
+    const unit = (p.unit || "").toUpperCase();
+    let bal = "—";
+    if (p.value !== null && p.value !== undefined){
+      bal = fmt(p.value, p.model === "credits_package" ? 0 : 2) + " " + unit;
+      if (p.capacity) bal += ' <span class="muted">/ ' + fmt(p.capacity,0) + '</span>';
+    } else if (p.spend_24h !== null && p.spend_24h !== undefined){
+      bal = '<span class="muted">no balance · 24h spend</span> ' + fmt(p.spend_24h,2) + " " + unit;
+    }
+    return '<tr>'
+      + '<td class="prov">' + p.provider
+        + (p.topups_6h ? ' <span class="tag">' + p.topups_6h + ' top-up</span>' : '') + '</td>'
+      + '<td><span class="tag">' + (p.model || "?").replace(/_/g," ") + '</span></td>'
+      + '<td class="num">' + bal + '</td>'
+      + '<td class="num">' + (p.burn_per_h ? fmt(p.burn_per_h, 3) : '<span class="muted">—</span>') + '</td>'
+      + '<td class="num">' + (p.baseline_per_h ? fmt(p.baseline_per_h, 3)
+          : '<span class="muted">warming</span>') + '</td>'
+      + '<td class="num ' + runwayClass(p.runway_h) + '">' + hours(p.runway_h) + '</td>'
+      + '<td>' + spark(p.series) + '</td>'
+      + '<td>' + (p.healthy ? '<span class="ok">ok</span>'
+          : '<span class="warn">' + (p.last_error || "no data") + '</span>') + '</td>'
+      + '</tr>';
+  }).join("");
+
+  document.getElementById("alerts").innerHTML = alerts.length ? alerts.map(a =>
+    '<div class="alert"><time>' + (a.ts || "") + '</time>'
+    + '<span class="' + (a.level === "critical" ? "crit" : a.level === "warn" ? "warn" : "muted") + '">'
+    + (a.level === "critical" ? "●" : a.level === "warn" ? "▲" : "·") + '</span>'
+    + '<span>' + (a.text || "") + '</span></div>').join("")
+    : '<div class="empty">No alerts yet. The collector suppresses anomaly alerts until it has '
+      + 'enough of its own history to know what normal is.</div>';
+
+  const api = d.api || {};
+  document.getElementById("standlink").innerHTML = api.reads
+    ? 'The stand answered <b>' + api.success_pct + '%</b> of ' + api.reads.toLocaleString("en-US")
+      + ' reads &middot; <a href="stand.html">how it misbehaves &rarr;</a>'
+    : '<a href="stand.html">how the stand behaves &rarr;</a>';
+
+  document.getElementById("foot").innerHTML =
+    "There is no total-spend number here on purpose: the accounts are denominated in USD, GBP and "
+    + "credits, and two of them expose no balance at all — only trailing cost. The one quantity that "
+    + "is comparable across all of them is <b>runway</b>, so the table is sorted by it.<br>"
+    + (d.window_note ? d.window_note.charAt(0).toUpperCase() + d.window_note.slice(1) + "." : "")
+    + " Generated <code>" + d.generated + "</code>.";
+}
+
+async function load(){
+  for (const url of DATA_URLS){
+    try {
+      const res = await fetch(url + "?t=" + Date.now(), {cache:"no-store"});
+      if (!res.ok) continue;
+      render(await res.json());
+      return;
+    } catch (e) { /* try the next source */ }
+  }
+  document.getElementById("sub").textContent =
+    "could not load data.json from any source — the collector may not have published yet";
+}
+load();
+setInterval(load, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How the stand behaves</title>
+<style>
+  :root{
+    --bg:#fbfbfa; --panel:#fff; --ink:#16150f; --muted:#6b6a60; --line:#e3e2dc;
+    --ok:#1a7f4b; --warn:#a86a00; --crit:#b3261e; --accent:#2b5cd9; --grid:#efeee8;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+      --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14140f; --panel:#1c1c17; --ink:#f0efe8; --muted:#9d9c91; --line:#2e2e27;
+    --ok:#4ec27f; --warn:#e0a33a; --crit:#f2695e; --accent:#7ea2ff; --grid:#26261f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.5 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 18px 60px}
+  h1{font-size:21px;margin:0 0 2px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13px;margin:0 0 6px}
+  .back{display:inline-block;margin:0 0 18px;font-size:13px;color:var(--accent);text-decoration:none}
+  .back:hover{text-decoration:underline}
+  .cards{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));margin:0 0 22px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+  .card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+  .card .big{font-size:24px;font-weight:650;letter-spacing:-.02em;margin-top:3px}
+  .card .note{font-size:12px;color:var(--muted);margin-top:4px}
+  h2{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);
+    margin:26px 0 9px;font-weight:600}
+  .scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:9px 12px;border-bottom:1px solid var(--grid)}
+  tr:last-child td{border-bottom:0}
+  .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  code{font:12.5px ui-monospace,"Cascadia Code",Consolas,monospace}
+  .bar{height:7px;border-radius:4px;background:var(--grid);overflow:hidden;min-width:90px}
+  .bar i{display:block;height:100%;background:var(--crit)}
+  .crit{color:var(--crit);font-weight:650} .warn{color:var(--warn);font-weight:600} .ok{color:var(--ok)}
+  .muted{color:var(--muted)}
+  footer{margin-top:28px;color:var(--muted);font-size:12.5px;line-height:1.65}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>How the stand behaves</h1>
+  <p class="sub" id="sub">loading…</p>
+  <a class="back" href="spend.html">&larr; back to spend</a> &nbsp; <a class="back" href="./">all three tasks</a>
+
+  <div class="cards" id="cards"></div>
+
+  <h2>Failure taxonomy</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>What came back</th><th class="num">Times</th><th class="num">Providers hit</th><th>Share of all failures</th></tr></thead>
+      <tbody id="faults"></tbody>
+    </table>
+  </div>
+
+  <h2>Per account</h2>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>Provider</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Failure rate</th><th></th></tr></thead>
+      <tbody id="providers"></tbody>
+    </table>
+  </div>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+const DATA_URLS = [
+  "data.json",
+  "https://raw.githubusercontent.com/AnastasiyaW/explee-spend-observability/data/data.json"
+];
+const n = x => (x === null || x === undefined) ? "—" : Number(x).toLocaleString("en-US");
+
+function rateClass(p){ return p >= 20 ? "crit" : p >= 5 ? "warn" : "ok"; }
+
+function render(d){
+  const a = d.api || {};
+  if (!a.reads){
+    document.getElementById("sub").textContent = "no reads recorded yet";
+    return;
+  }
+  document.getElementById("sub").innerHTML =
+    "Nothing here is documented by the provider. It is what " + n(a.reads) +
+    " of our own reads actually got back, over the last 24 hours.";
+
+  const lat = a.latency_ms || {};
+  document.getElementById("cards").innerHTML = [
+    ["Reads", n(a.reads), "one per provider per poll", "ok"],
+    ["Success rate", a.success_pct + "%", n(a.failed) + " failed", rateClass(100 - a.success_pct)],
+    ["Latency p50 / p95", n(lat.p50) + " / " + n(lat.p95) + " ms", "slowest " + n(lat.max) + " ms", "ok"],
+    ["Distinct fault kinds", String((a.faults || []).length),
+     "each needs different handling", (a.faults || []).length > 3 ? "warn" : "ok"]
+  ].map(c => '<div class="card"><div class="lbl">' + c[0] + '</div><div class="big ' + c[3]
+    + '">' + c[1] + '</div><div class="note">' + c[2] + '</div></div>').join("");
+
+  const total = a.failed || 1;
+  document.getElementById("faults").innerHTML = (a.faults || []).map(f => {
+    const share = 100 * f.count / total;
+    return '<tr><td><code>' + f.kind + '</code></td><td class="num">' + n(f.count)
+      + '</td><td class="num">' + n(f.providers) + '</td>'
+      + '<td><div class="bar"><i style="width:' + share.toFixed(1) + '%"></i></div>'
+      + '<span class="muted" style="font-size:12px">' + share.toFixed(1) + '%</span></td></tr>';
+  }).join("");
+
+  const pp = a.per_provider || {};
+  document.getElementById("providers").innerHTML = Object.keys(pp).map(name => {
+    const r = pp[name];
+    return '<tr><td>' + name + '</td><td class="num">' + n(r.reads) + '</td><td class="num">'
+      + n(r.failed) + '</td><td class="num ' + rateClass(r.failure_pct) + '">' + r.failure_pct
+      + '%</td><td><div class="bar"><i style="width:' + Math.min(100, r.failure_pct * 3).toFixed(1)
+      + '%"></i></div></td></tr>';
+  }).join("");
+
+  document.getElementById("foot").innerHTML =
+    "The task never asked for this page — it asks for a dashboard that shows spend at a glance, and "
+    + "for the monitor to cope with a service that misbehaves. Coping is only believable if the "
+    + "misbehaviour is measured, so it lives here instead of crowding the number that matters.<br>"
+    + "Every read is stored with its status, error text, latency and the first 600 bytes of the body, "
+    + "so this table is a view over evidence rather than a counter someone incremented. "
+    + "Generated <code>" + d.generated + "</code>.";
+}
+
+async function load(){
+  for (const url of DATA_URLS){
+    try{
+      const res = await fetch(url + "?t=" + Date.now(), {cache:"no-store"});
+      if (!res.ok) continue;
+      render(await res.json());
+      return;
+    }catch(e){}
+  }
+  document.getElementById("sub").textContent = "could not load data.json from any source";
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
