@@ -94,13 +94,15 @@ first, and that ordering is the answer to "what should I look at".
 | alert | fires when | why this number |
 |---|---|---|
 | `burn_anomaly` | a **sustained** burn ≥ **4×** the median of per-bucket rates, held ≥ **10 min** | the task's own example is "~4x above normal, sustained 20min"; firing at half the sustain gives warning while it is still actionable. "Sustained" is not decoration: the balance must fall across ≥ 3 separate intervals, which is what tells a burn apart from one coarse step |
-| `spend_spike` | for accounts with no balance: **accrual per hour** ≥ 4× the average the trailing total itself implies | a trailing total is not a rate, and neither is the median of its own derivative — that median is zero most of the time, because the window falls as old spend ages out. See the review section |
-| `runway` | < **24 h** (warn), < **6 h** (critical), and **0 or less** (critical, "empty, not slow") | 24h is one working day of notice; 6h is "top up now". Two rates are weighed and the shorter answer wins: the four-hour aggregate, and the rate of a burn happening right now |
+| `spend_spike` | for accounts with no balance: **the spend that arrived**, per hour, ≥ 4× the average the trailing total itself implies | a trailing total is not a rate, and neither is the median of its own derivative. Both halves had to change: the window falls as old spend ages out, so the median is zero almost always **and** the endpoints of a falling window read zero even while spend arrives inside it |
+| `runway` | < **24 h** (warn), < **6 h** (critical), on an account with a floor that is actually going down | 24h is one working day of notice; 6h is "top up now". Two rates are weighed and the shorter wins: the four-hour aggregate, and the rate of a burn happening right now. Postpaid is excluded — it has no floor to reach — and so is an account that ends the window no lower than it started, which is what an auto-recharge looks like from outside |
 | `stale` | **3** consecutive failed reads | measured: single failures are injected and rotate, so 1 would be pure noise |
 | `world` | epoch or fingerprint changes | every baseline before it is void, and so is every cooldown |
 | `shape` | a provider's response layout changes | the fallback parser keeps returning *a* number; the risk is that it now means something else |
 | `credits_low` | ≤ 10% of package left | a package cannot be topped up mid-cycle, only waited out |
 | `debt` | postpaid debt growing ≥ **4×** its own normal | negative is normal for `vastai` and so is steady growth. Alerting on any growing debt produced twelve identical lines — 17% of every alert written |
+| `exhausted` | balance is **0 or less** on an account that has a floor | its own key, not runway's: sharing one let the cooldown from a "1.0h left" critical swallow the line saying the money is now gone |
+| `control` | `/meta` or `/providers` fails **3** times in a row | every sample is keyed by the world identity and every provider comes from the catalog, so this is the monitor going blind, not one account going quiet. It used to fail in silence: 200 failed reads of each produced zero samples, zero alerts and empty statistics |
 | `catalog:change` | a provider appears or disappears | a provider that vanishes stops being watched, which looks like one that stopped spending |
 
 **What is deliberately *not* an alert:** a balance going **up**. Top-ups and the
@@ -163,7 +165,7 @@ invented a 47,943/h phantom burn; the snapshot was rewritten every second
 `alerts.jsonl` would have killed the run permanently.
 
 The previous self-test passed on three of five deliberately broken versions.
-The current one kills **twenty-two of twenty-two**, in about a minute; the
+The current one kills **twenty-nine of twenty-nine**, in about a minute; the
 self-test itself runs in three seconds.
 
 ### A second review, against this brief
@@ -242,6 +244,47 @@ the whole board green.
 One thing worth saying plainly: the suite was green before this pass, and green
 again after it. That is the point of the mutation gate — it asks whether the
 tests can fail, not whether they pass.
+
+### A fourth pass: the same reviewer role, on my own fixes
+
+The eight fixes above were written by the person who received the report that
+found them, so a fresh reviewer was pointed at the result with the eight claims
+restated as things to refute. Verdict: **NEEDS_WORK**, and it was right.
+
+**The only alert real data produced was a false one.** Replaying 705 live
+readings through the analyzer yielded exactly one line: a runway warning for
+`vastai` — a postpaid account whose own catalog entry says going negative is
+normal, and whose alert text says the same. The exhaustion branch excluded
+postpaid; the runway branch did not.
+
+**"Three intervals" measured how often we poll, not what the balance did.** A
+throttled provider backs off to 300 s — this file computes that backoff itself —
+which fits two intervals into a fifteen-minute window. A real 9,000/h burn on
+such a provider was invisible, and the page said 21 hours of runway for an
+account 0.94 hours from empty. The test is now the *fraction* of intervals that
+fell, which reads the same at any cadence.
+
+**The spend detector's baseline was fixed and its numerator was not.** Over 743
+seconds of live reads both trailing totals fell monotonically, so measuring
+accrual from the window's endpoints returned exactly 0.0 on 41 of 41 windows.
+Summing the intervals where the total rose sees the money that arrived; the
+decline between them is the window ageing, not a refund. The 24-hour column is
+now preferred over the 30-day one for the same reason: thirty times less drift
+for a burst to cancel first.
+
+Also fixed: the exhaustion alert shared runway's cooldown and was swallowed by
+it; postpaid debt was blind when its own baseline was exactly zero, the same
+truthiness bug in the sibling branch; the health bound ignored the backoff this
+file applies, so a provider answering every 300 s published as unhealthy; an
+account whose balance nets zero over four hours was given a runway; and the
+control plane could fail two hundred times in silence.
+
+**And one of my own tests was measuring nothing.** A mutant reported SURVIVED
+while mutating a line in a different branch, because its anchor had become
+ambiguous — two branches had grown the same expression and the patch took the
+first. `mutation_test.py` now refuses an anchor that matches more than once, and
+that guard immediately found three more mutants pointing at the wrong site.
+**29 of 29** killed, on anchors that are unique.
 
 ## About the trace
 
