@@ -83,7 +83,8 @@ first, and that ordering is the answer to "what should I look at".
 
 | alert | fires when | why this number |
 |---|---|---|
-| `burn_anomaly` | recent burn ≥ **4×** the 4h median, sustained ≥ **10 min** | the task's own example is "~4x above normal, sustained 20min"; firing at half the sustain gives warning while it is still actionable |
+| `burn_anomaly` | recent rate ≥ **4×** the median of per-bucket rates, sustained ≥ **10 min** | the task's own example is "~4x above normal, sustained 20min"; firing at half the sustain gives warning while it is still actionable |
+| `spend_spike` | for accounts with no balance: **accrual per hour** ≥ 4× its own normal, sustained | a trailing total is not a rate — see the review section below |
 | `runway` | < **24 h** (warn), < **6 h** (critical) | 24h is one working day of notice; 6h is "top up now" |
 | `stale` | **3** consecutive failed reads | measured: single failures are injected and rotate, so 1 would be pure noise |
 | `world` | epoch or fingerprint changes | every baseline before it is void |
@@ -110,10 +111,54 @@ severity. `alerts.jsonl` is only useful if a human can read it end to end.
 
 Every `ts` is ISO-8601 with an explicit `+00:00` offset.
 
+## What an independent review caught
+
+A fresh-context agent was given the code and the live API and told to refute
+these claims rather than confirm them. It found eight defects, six of them in
+detectors this README had already described as working. All are fixed; the
+self-test now kills a mutant for each one.
+
+The three worth naming, because the lesson generalises:
+
+**A median of drops is not a rate.** Burn was computed as the median of
+per-interval decreases, which answers "how big is a drop" and not "how fast is
+money leaving". An account whose balance moves in coarse steps sits flat between
+drops, so dropping the flat intervals inflated the rate by the reciprocal of its
+duty cycle — measured at **3.05× on twocaptcha and 2.63× on findymail**. Runway
+is balance ÷ rate, so the dashboard published **46.9 h where 143.1 h was true**,
+for the accounts it ranked 4th and 5th most urgent. It was a plausible-looking
+number, which is why nothing else would ever have flagged it. Now: total drop
+divided by total *elapsed* time, bucketed, median across buckets.
+
+**Two detectors could never fire.** The shape-change alert queried the samples
+table *after* inserting the current row, so it always found the shape it had
+just written and no change was ever visible. The spend-report detector compared
+a trailing-24h total against the median of its own 4h of readings — arithmetic
+that is bounded near 1.09× and can never reach a threshold of 4.0; over fifteen
+live rounds the highest ratio either account reached was 1.0022. Both providers
+that expose no balance were unmonitored while this file said otherwise. Now the
+shape history is read before the insert, and a trailing total is differentiated
+into an accrual rate before anything is compared.
+
+**Resolving an alert deleted its cooldown.** `clear()` removed the state row, so
+a value oscillating across a threshold re-fired at full volume: twelve polls
+produced six identical lines inside one second. Now a resolved alert keeps its
+timestamp.
+
+Also fixed: runway had no warm-up and would publish "1.1 h left, top up now" off
+two readings twenty seconds apart; the world key filtered on epoch but not
+fingerprint, so a fingerprint-only reset spliced two worlds into one series and
+invented a 47,943/h phantom burn; the snapshot was rewritten every second
+(~26 GB of writes a day) outside the try that guards polling, so one bad byte in
+`alerts.jsonl` would have killed the run permanently.
+
+The previous self-test passed on three of five deliberately broken versions.
+The current one kills eight of eight.
+
 ## How it runs
 
 ```
-Contabo VPS ──outbound only──> jobs.explee.com   (poll /meta + 15 balances, 20s, staggered)
+a small VPS ──outbound only──> jobs.explee.com   (poll /meta + 15 balances, 20s, staggered)
      │
      ├─ SQLite: every sample, verbatim body kept as evidence
      ├─ alerts.jsonl

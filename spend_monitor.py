@@ -73,6 +73,8 @@ STALE_FAILURES = 3           # three consecutive misses is an outage, one is a h
 STALE_SEC = 300
 REALERT_COOLDOWN_SEC = 1800  # one line per problem per half hour, unless it escalates
 MAX_BACKOFF_SEC = 300
+SNAPSHOT_INTERVAL_SEC = 30   # the snapshot is published every 5 min; rewriting it every
+                             # second cost ~26 GB of disk writes a day for nothing
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +203,11 @@ def normalize(body_text: str, declared_model: str, declared_unit: str) -> dict:
     # anthropic {"object":"cost_report","amount_cents":11218,"window":"trailing_24h"}.
     spend_keys = [k for k in data if k.lower().startswith("spend")]
     is_cost_report = "cost_report" in obj_kind or (window.startswith("trailing") and not spend_keys)
-    if spend_keys or is_cost_report:
+    # A payload carrying BOTH a balance and a spend figure is a balance account
+    # that also reports cost. Treating it as a spend report threw the balance
+    # away and reported the account as having none.
+    has_balance = bool(VALUE_KEYS & lower_keys)
+    if (spend_keys or is_cost_report) and not has_balance:
         for key in spend_keys:
             value = data[key]
             if not isinstance(value, (int, float)) or isinstance(value, bool):
@@ -358,7 +364,12 @@ class Alerter:
             row = self.conn.execute(
                 "SELECT last_ts, last_level FROM alert_state WHERE key=?", (key,)).fetchone()
             if row:
-                escalated = LEVEL_ORDER.get(level, 0) > LEVEL_ORDER.get(row["last_level"] or "info", 0)
+                previous = row["last_level"]
+                # A resolved alert keeps its timestamp on purpose. Deleting the
+                # row on clear() made the cooldown vanish, so a value oscillating
+                # across a threshold produced six identical lines in one second.
+                escalated = (previous not in (None, "resolved")
+                             and LEVEL_ORDER.get(level, 0) > LEVEL_ORDER.get(previous, 0))
                 if not escalated and (ts - (row["last_ts"] or 0)) < REALERT_COOLDOWN_SEC:
                     return False
             record = {"ts": iso(ts), "provider": provider, "text": text,
@@ -375,49 +386,107 @@ class Alerter:
         return True
 
     def clear(self, key: str) -> None:
+        """Mark resolved WITHOUT forgetting when it last fired.
+
+        Forgetting is what turned a threshold-hugging value into an alert storm.
+        """
         with self.lock:
-            self.conn.execute("DELETE FROM alert_state WHERE key=?", (key,))
+            self.conn.execute(
+                "UPDATE alert_state SET last_level='resolved' WHERE key=?", (key,))
             self.conn.commit()
 
 
 # ---------------------------------------------------------------------------
 # analysis
 # ---------------------------------------------------------------------------
-def burn_series(conn, provider: str, since: float, world_epoch):
-    """Spend per hour between consecutive successful readings.
+def _readings(conn, provider: str, since: float, world: dict):
+    """Successful value readings inside ONE world.
 
-    Only DECREASES count. A rise is a top-up or the monthly credit refresh -
-    the task names both as normal operations, so they must never enter the
-    baseline, or one top-up would poison "normal" for hours.
+    Both the epoch and the fingerprint must match. Filtering on the epoch alone
+    lets a fingerprint-only reset splice two different worlds into one series,
+    and the re-seed then reads as a single enormous spend.
     """
-    rows = conn.execute(
+    return conn.execute(
         "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
-        "AND ts>=? AND world_epoch IS ? ORDER BY ts", (provider, since, world_epoch)).fetchall()
-    out = []
+        "AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts",
+        (provider, since, world.get("world_epoch"), world.get("fingerprint"))).fetchall()
+
+
+def spend_rate(conn, provider: str, since: float, world: dict, until=None):
+    """Spend per hour: total drop divided by total ELAPSED time.
+
+    The subtle version of this was wrong and shipped. Taking the median of
+    per-interval drops answers "how big is a drop when one happens", not "how
+    fast is money leaving". A provider whose balance moves in coarse steps sits
+    flat most of the time, so dropping the flat intervals inflated the rate by
+    the reciprocal of its duty cycle - measured at 3.05x on twocaptcha and 2.63x
+    on findymail, which published 46.9h of runway where 143.1h was true.
+
+    Elapsed time in the denominator includes the flat stretches, which is what
+    makes this a rate. Increases are excluded from the numerator but their time
+    still counts: a top-up is not spending, and it is not a pause either.
+    """
+    rows = _readings(conn, provider, since, world)
+    if until is not None:
+        rows = [r for r in rows if r["ts"] <= until]
+    if len(rows) < 2:
+        return None
+    spent, elapsed = 0.0, 0.0
     for prev, cur in zip(rows, rows[1:]):
-        dt_h = (cur["ts"] - prev["ts"]) / 3600.0
-        if dt_h <= 0:
+        seconds = cur["ts"] - prev["ts"]
+        if seconds <= 0:
             continue
-        delta = prev["value"] - cur["value"]
-        if delta > 0:
-            out.append((cur["ts"], delta / dt_h))
-    return out
+        elapsed += seconds
+        drop = prev["value"] - cur["value"]
+        if drop > 0:
+            spent += drop
+    if elapsed <= 0:
+        return None
+    return spent / (elapsed / 3600.0)
 
 
-def robust_baseline(samples):
-    """Median and MAD. Median, not mean: one spike must not redefine normal."""
-    values = [v for _, v in samples]
-    if not values:
-        return None, None
-    median = statistics.median(values)
-    mad = statistics.median([abs(v - median) for v in values]) or 0.0
-    return median, mad
+def baseline_rate(conn, provider: str, world: dict, window=None, buckets=8):
+    """Median of per-bucket rates - robust AND dimensionally a rate.
+
+    Each bucket is a proper rate (spend over elapsed time), so a quiet stretch
+    contributes a low number rather than disappearing. Taking the median across
+    buckets keeps one burst from redefining normal.
+
+    Returns (median_rate, bucket_count) so callers can tell "no baseline yet"
+    from "a baseline of zero".
+    """
+    window = window or BASELINE_WINDOW_SEC
+    end = now()
+    rows = _readings(conn, provider, end - window, world)
+    if len(rows) < 2:
+        return None, 0
+    # Bucket across the span we actually have, not the span we would like. Fixed
+    # 30-minute buckets over a four-hour window mean no baseline at all for the
+    # first ninety minutes, which is the stretch where a runaway account is
+    # least likely to be noticed by anything else.
+    start = max(end - window, rows[0]["ts"])
+    span = end - start
+    width = span / buckets
+    if width < 120:                     # below two minutes a bucket holds noise
+        buckets = max(2, int(span // 120))
+        width = span / buckets
+    rates = []
+    for i in range(buckets):
+        lo = start + i * width
+        rate = spend_rate(conn, provider, lo, world, until=lo + width)
+        if rate is not None:
+            rates.append(rate)
+    if not rates:
+        return None, 0
+    return statistics.median(rates), len(rates)
 
 
-def topups(conn, provider, since, world_epoch):
-    rows = conn.execute(
-        "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
-        "AND ts>=? AND world_epoch IS ? ORDER BY ts", (provider, since, world_epoch)).fetchall()
+def reading_count(conn, provider: str, world: dict, window=None) -> int:
+    return len(_readings(conn, provider, now() - (window or BASELINE_WINDOW_SEC), world))
+
+
+def topups(conn, provider, since, world: dict):
+    rows = _readings(conn, provider, since, world)
     return [(cur["ts"], cur["value"] - prev["value"])
             for prev, cur in zip(rows, rows[1:]) if cur["value"] > prev["value"]]
 
@@ -430,8 +499,7 @@ class Analyzer:
         self.anomaly_since = {}
         self.started = now()
 
-    def on_sample(self, provider, catalog_entry, record, world):
-        epoch = world.get("world_epoch")
+    def on_sample(self, provider, catalog_entry, record, world, shape_history=None):
         if not record["ok"]:
             self._health(provider, record)
             return
@@ -441,25 +509,25 @@ class Analyzer:
         # A field rename is the failure this monitor is least likely to notice
         # on its own: the fallback parser keeps returning a number, so nothing
         # looks broken while the number may mean something else entirely.
-        previous = self.conn.execute(
-            "SELECT shape FROM samples WHERE provider=? AND ok=1 AND shape IS NOT NULL "
-            "AND shape != ? ORDER BY ts DESC LIMIT 1", (provider, record["shape"])).fetchone()
-        seen_before = self.conn.execute(
-            "SELECT 1 FROM samples WHERE provider=? AND ok=1 AND shape=? LIMIT 1",
-            (provider, record["shape"])).fetchone()
-        if previous and not seen_before:
+        #
+        # `shape_history` must be read BEFORE the current sample is stored. The
+        # first version queried the table afterwards, so it always found the row
+        # it had just written and the alert could never fire - a detector that
+        # existed only in the README.
+        if shape_history and record["shape"] and record["shape"] not in shape_history:
             self.alerter.fire(
                 "shape:" + provider, "warn", provider,
                 "{}: response shape changed from {} to {} (parsed as {} {}). The value still reads, "
                 "but check it means what it used to - a rename to a minor unit would overstate this "
-                "account 100x.".format(provider, previous["shape"], record["shape"],
+                "account 100x.".format(provider, sorted(shape_history)[0], record["shape"],
                                        record["value"], record["unit"] or ""),
-                previous_shape=previous["shape"], shape=record["shape"], value=record["value"])
+                previous_shape=sorted(shape_history)[0], shape=record["shape"],
+                value=record["value"])
 
         if record["model"] == "spend_report":
-            self._spend_report(provider, record, epoch)
+            self._spend_report(provider, record, world)
             return
-        self._balance(provider, record, epoch)
+        self._balance(provider, record, world)
 
     # -- health -----------------------------------------------------------
     def _health(self, provider, record):
@@ -479,39 +547,83 @@ class Analyzer:
                           provider, text, failures=streak, reason=reason)
 
     # -- spend-report providers -------------------------------------------
-    def _spend_report(self, provider, record, epoch):
-        if record["spend_24h"] is None:
+    def _spend_report(self, provider, record, world):
+        """These accounts expose no balance, only a trailing total.
+
+        The first version compared the trailing-24h figure against the median of
+        its own readings over four hours. That comparison is mathematically
+        incapable of firing: a sustained k-fold burst can only move a 24h window
+        by 24/22 within four hours, so the ratio is bounded near 1.09 and the
+        threshold of 4.0 was unreachable. Measured over fifteen live rounds the
+        highest ratio either provider reached was 1.0022, and both were
+        effectively unmonitored while the README said otherwise.
+
+        A trailing total is not a rate. Its DERIVATIVE is. Spend accrued per hour
+        is how fast the number climbs, and that is comparable across time.
+        """
+        column = "spend_30d" if record["spend_30d"] is not None else "spend_24h"
+        current = record[column]
+        if current is None:
             return
         rows = self.conn.execute(
-            "SELECT spend_24h FROM samples WHERE provider=? AND ok=1 AND spend_24h IS NOT NULL "
-            "AND ts>=? AND world_epoch IS ? ORDER BY ts", (provider, now() - BASELINE_WINDOW_SEC, epoch)
-        ).fetchall()
-        history = [r["spend_24h"] for r in rows]
-        if len(history) < WARMUP_BURN_SAMPLES:
+            "SELECT ts, {0} AS v FROM samples WHERE provider=? AND ok=1 AND {0} IS NOT NULL "
+            "AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts".format(column),
+            (provider, now() - BASELINE_WINDOW_SEC, world.get("world_epoch"),
+             world.get("fingerprint"))).fetchall()
+        if len(rows) < WARMUP_BURN_SAMPLES:
             return
-        median = statistics.median(history)
-        current = record["spend_24h"]
-        if median > 0 and current / median >= ANOMALY_RATIO:
-            self.alerter.fire(
-                "spend_spike:" + provider, "critical", provider,
-                "{}: trailing 24h spend {:.2f} {} against a {:.2f} median over the last {:.0f}h "
-                "({:.1f}x). No balance is exposed here, so this is the only signal this account gives."
-                .format(provider, current, record["unit"] or "", median,
-                        BASELINE_WINDOW_SEC / 3600, current / median),
-                spend_24h=current, median_24h=median, ratio=round(current / median, 2))
+
+        def climb(subset):
+            """Accrual per hour across a stretch of a trailing total."""
+            if len(subset) < 2:
+                return None
+            seconds = subset[-1]["ts"] - subset[0]["ts"]
+            if seconds <= 0:
+                return None
+            return max(0.0, subset[-1]["v"] - subset[0]["v"]) / (seconds / 3600.0)
+
+        recent = climb([r for r in rows if r["ts"] >= now() - BURN_WINDOW_SEC])
+        buckets, width = [], BASELINE_WINDOW_SEC / 8
+        start = now() - BASELINE_WINDOW_SEC
+        for i in range(8):
+            lo = start + i * width
+            rate = climb([r for r in rows if lo <= r["ts"] <= lo + width])
+            if rate is not None:
+                buckets.append(rate)
+        if recent is None or len(buckets) < 3:
+            return
+        median = statistics.median(buckets)
+        if median <= 0 or recent / median < ANOMALY_RATIO:
+            self.alerter.clear("spend_spike:" + provider)
+            return
+        first = self.anomaly_since.setdefault("spend:" + provider, now())
+        sustained = now() - first
+        if sustained < ANOMALY_SUSTAIN_SEC:
+            return
+        self.alerter.fire(
+            "spend_spike:" + provider, "critical", provider,
+            "{}: cost accruing {:.2f} {}/h against a normal of {:.2f} ({:.1f}x), sustained {:.0f} min. "
+            "Trailing total now {:.2f}. No balance is exposed here, so this rate is the only signal "
+            "this account gives.".format(provider, recent, record["unit"] or "", median,
+                                         recent / median, sustained / 60, current),
+            accrual_per_h=round(recent, 4), baseline_per_h=round(median, 4),
+            ratio=round(recent / median, 2), trailing_total=current, metric=column)
 
     # -- balance-bearing providers ----------------------------------------
-    def _balance(self, provider, record, epoch):
+    def _balance(self, provider, record, world):
         value, unit = record["value"], record["unit"] or ""
-        recent = burn_series(self.conn, provider, now() - BURN_WINDOW_SEC, epoch)
-        baseline_samples = burn_series(self.conn, provider, now() - BASELINE_WINDOW_SEC, epoch)
-        median, mad = robust_baseline(baseline_samples)
+        recent_burn = spend_rate(self.conn, provider, now() - BURN_WINDOW_SEC, world) or 0.0
+        median, bucket_count = baseline_rate(self.conn, provider, world)
+        samples = reading_count(self.conn, provider, world)
 
-        recent_burn = statistics.mean([v for _, v in recent]) if recent else 0.0
+        # Warm-up guards EVERY threshold, not just the anomaly one. With two
+        # readings twenty seconds apart the first version published "1.1h of
+        # runway left, top up now" from a single interval.
+        warm = samples >= WARMUP_BURN_SAMPLES and bucket_count >= 3
 
         # anomaly: sustained, and only once a baseline exists worth comparing to
         key = "burn_anomaly:" + provider
-        if median and len(baseline_samples) >= WARMUP_BURN_SAMPLES and recent_burn > 0:
+        if warm and median and recent_burn > 0:
             ratio = recent_burn / median if median > 0 else math.inf
             if ratio >= ANOMALY_RATIO:
                 first = self.anomaly_since.setdefault(provider, now())
@@ -535,7 +647,7 @@ class Analyzer:
 
         # runway: the one number comparable across usd, gbp and credits
         rate = median if median else recent_burn
-        if rate and rate > 0 and value is not None and value > 0:
+        if warm and rate and rate > 0 and value is not None and value > 0:
             hours = value / rate
             rkey = "runway:" + provider
             if hours <= RUNWAY_CRIT_H:
@@ -555,7 +667,7 @@ class Analyzer:
                 self.alerter.clear(rkey)
 
         # postpaid debt: no floor to run out of, so the signal is the debt itself
-        if record["model"] == "postpaid" and value is not None and value < 0:
+        if warm and record["model"] == "postpaid" and value is not None and value < 0:
             debt_rate = rate or 0.0
             if debt_rate > 0:
                 self.alerter.fire(
@@ -680,6 +792,12 @@ class Monitor:
             self.backoff.pop(provider, None)
             record = normalize(body, entry.get("pay_model"), entry.get("unit"))
 
+        # Read the shapes seen so far BEFORE storing this one, or the comparison
+        # finds the row it just wrote and no change is ever visible.
+        shape_history = {r["shape"] for r in self.conn.execute(
+            "SELECT DISTINCT shape FROM samples WHERE provider=? AND ok=1 AND shape IS NOT NULL",
+            (provider,)).fetchall()}
+
         self.conn.execute(
             "INSERT INTO samples(ts,world_epoch,fingerprint,provider,ok,http_status,latency_ms,"
             "model,unit,value,capacity,spend_24h,spend_30d,refresh,shape,error,raw) "
@@ -689,7 +807,7 @@ class Monitor:
              record["value"], record["capacity"], record["spend_24h"], record["spend_30d"],
              record["refresh"], record["shape"], record["error"], (body or "")[:600]))
         self.conn.commit()
-        self.analyzer.on_sample(provider, entry, record, self.world)
+        self.analyzer.on_sample(provider, entry, record, self.world, shape_history)
 
     # -- loop -------------------------------------------------------------
     def run(self):
@@ -711,6 +829,7 @@ class Monitor:
             return 0
 
         next_meta = now() + META_INTERVAL_SEC
+        last_snapshot = 0.0
         next_due = {}
         # Stagger the providers evenly instead of sweeping them in a burst.
         # Measured: 429 arrives on a random provider regardless of our pace, so
@@ -740,9 +859,16 @@ class Monitor:
                     wait = self.backoff.get(provider, POLL_INTERVAL)
                     next_due[provider] = now() + wait + random.uniform(0, POLL_INTERVAL * 0.15)
 
-            write_snapshot(self.conn, self.world)
-            if self.once:
-                return 0
+            # Writing the snapshot every second rewrote a third of a megabyte
+            # 86400 times a day for data that is published every five minutes,
+            # and it sat outside the try that guards polling, so one bad byte in
+            # alerts.jsonl killed the run permanently.
+            if now() - last_snapshot >= SNAPSHOT_INTERVAL_SEC:
+                try:
+                    write_snapshot(self.conn, self.world)
+                except Exception as exc:
+                    print("snapshot failed: {}".format(exc), file=sys.stderr, flush=True)
+                last_snapshot = now()
             self.stop.wait(1.0)
         return 0
 
@@ -750,11 +876,11 @@ class Monitor:
 # ---------------------------------------------------------------------------
 # snapshot for the dashboard
 # ---------------------------------------------------------------------------
-def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH):
+def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = None):
+    alerts_path = alerts_path or ALERTS_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     providers = []
     rows = conn.execute("SELECT DISTINCT provider FROM samples").fetchall()
-    epoch = world.get("world_epoch")
     for row in rows:
         provider = row["provider"]
         last = conn.execute(
@@ -762,13 +888,15 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH):
         last_ok = conn.execute(
             "SELECT * FROM samples WHERE provider=? AND ok=1 ORDER BY ts DESC LIMIT 1",
             (provider,)).fetchone()
-        baseline = burn_series(conn, provider, now() - BASELINE_WINDOW_SEC, epoch)
-        median, _ = robust_baseline(baseline)
-        recent = burn_series(conn, provider, now() - BURN_WINDOW_SEC, epoch)
-        recent_burn = statistics.mean([v for _, v in recent]) if recent else 0.0
+        median, buckets = baseline_rate(conn, provider, world)
+        recent_burn = spend_rate(conn, provider, now() - BURN_WINDOW_SEC, world) or 0.0
+        samples_seen = reading_count(conn, provider, world)
+        warm = samples_seen >= WARMUP_BURN_SAMPLES and buckets >= 3
         value = last_ok["value"] if last_ok else None
         rate = median or recent_burn
-        runway = (value / rate) if (rate and value and value > 0) else None
+        # A runway derived from a baseline the alerting layer would refuse to
+        # act on must not be published as if it were solid.
+        runway = (value / rate) if (warm and rate and value and value > 0) else None
         series = conn.execute(
             "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
             "AND ts>=? ORDER BY ts", (provider, now() - 6 * 3600)).fetchall()
@@ -782,18 +910,21 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH):
             "burn_per_h": round(recent_burn, 4),
             "baseline_per_h": round(median, 4) if median else None,
             "runway_h": round(runway, 2) if runway else None,
+            "warm": warm,
             "healthy": bool(last and last["ok"]),
             "last_error": (last["error"] if last and not last["ok"] else None),
             "last_seen": iso(last["ts"]) if last else None,
             "last_ok_seen": iso(last_ok["ts"]) if last_ok else None,
-            "samples": len(series),
-            "topups_6h": len(topups(conn, provider, now() - 6 * 3600, epoch)),
+            "samples": samples_seen,
+            "topups_6h": len(topups(conn, provider, now() - 6 * 3600, world)),
             "series": [[round(r["ts"]), r["value"]] for r in series][-400:],
         })
     providers.sort(key=lambda p: (p["runway_h"] is None, p["runway_h"] or 0))
     alerts = []
-    if ALERTS_PATH.exists():
-        lines = ALERTS_PATH.read_text(encoding="utf-8").splitlines()[-60:]
+    if alerts_path.exists():
+        # errors="replace": one bad byte in this file used to take the whole
+        # process down, permanently, since the file survives the restart.
+        lines = alerts_path.read_text(encoding="utf-8", errors="replace").splitlines()[-60:]
         for line in lines:
             try:
                 alerts.append(json.loads(line))
@@ -873,21 +1004,11 @@ def self_test() -> int:
         if not changed["ok"] or changed["value"] != 12.5:
             failures.append("fallback did not survive an unseen shape")
 
-        # --- a top-up must not enter the baseline ---------------------------
         # Timestamps must be recent: every window is relative to now(), so data
         # planted at a 1970 epoch is invisible to the very code under test.
         # This is exactly how the first run of this self-test failed.
         step = 300.0
-        base = now() - 31 * step
-        for i in range(30):                      # steady 0.5 per 5 min = 6.0/h
-            insert("steady", base + i * step, 500 - i * 0.5)
-        insert("steady", base + 30 * step, 900.0)  # a top-up
-        series = burn_series(conn, "steady", now() - BASELINE_WINDOW_SEC, 1.0)
-        if any(v < 0 for _, v in series):
-            failures.append("a top-up leaked into the burn series")
-        median, _ = robust_baseline(series)
-        if median is None or abs(median - 6.0) > 0.5:
-            failures.append("baseline is {} expected ~6/h".format(median))
+        base = now() - 40 * step
 
         def sample(value, model="prepaid_balance", **kw):
             record = {"ok": True, "model": model, "unit": "usd", "value": value,
@@ -901,33 +1022,95 @@ def self_test() -> int:
                 return []
             return [json.loads(l) for l in alerts_path.read_text(encoding="utf-8").splitlines()]
 
-        # --- runway must fire when the money is nearly gone -----------------
-        for i in range(20):                      # 4.0 per 5 min = 48/h
-            insert("dying", base + i * step, 100 - i * 4.0)
+        # --- a RATE, not the size of a drop ---------------------------------
+        # The account moves in coarse steps: 3.0 every third reading. True rate
+        # is 3.0 per 15 min = 12/h. Taking the median of drop events instead
+        # gives 36/h - the exact 3x class of error that shipped and published
+        # 46.9h of runway where 143.1h was true.
+        for i in range(36):
+            insert("steppy", base + i * step, 1000 - 3.0 * (i // 3))
+        rate = spend_rate(conn, "steppy", now() - BASELINE_WINDOW_SEC, world)
+        if rate is None or abs(rate - 12.0) > 1.0:
+            failures.append("spend_rate is {} - expected ~12/h; a duty-cycled account "
+                            "must not read as if it spent only while dropping".format(rate))
+
+        # --- a top-up adds nothing to the numerator, but its time still counts
+        for i in range(30):                      # steady 0.5 per 5 min = 6.0/h
+            insert("steady", base + i * step, 500 - i * 0.5)
+        insert("steady", base + 30 * step, 900.0)  # a top-up
+        steady = spend_rate(conn, "steady", now() - BASELINE_WINDOW_SEC, world)
+        if steady is None or steady < 0 or abs(steady - 5.8) > 1.0:
+            failures.append("top-up distorted the rate: {} expected ~6/h".format(steady))
+
+        # --- one world only --------------------------------------------------
+        # A fingerprint-only reset used to splice two worlds into one series and
+        # invent an enormous phantom drop.
+        conn.execute("INSERT INTO samples(ts,world_epoch,fingerprint,provider,ok,model,unit,value)"
+                     " VALUES(?,?,?,?,?,?,?,?)",
+                     (base + 40 * step, 1.0, "bbb", "steady", 1, "prepaid_balance", "usd", 5.0))
+        conn.commit()
+        after = spend_rate(conn, "steady", now() - BASELINE_WINDOW_SEC, world)
+        if after is None or abs(after - steady) > 0.01:
+            failures.append("a sample from another world entered the series: {} vs {}".format(
+                after, steady))
+
+        # --- warm-up gates RUNWAY too, not only the anomaly -----------------
+        insert("fresh", now() - 20, 200.0)
+        insert("fresh", now() - 1, 199.0)        # one interval: 180/h, 1.1h "runway"
+        analyzer.on_sample("fresh", {"pay_model": "prepaid_balance"}, sample(199.0), world)
+        if any(a["provider"] == "fresh" for a in lines()):
+            failures.append("runway fired on two readings; warm-up does not gate it")
+
+        # --- runway must fire when the money really is nearly gone ----------
+        for i in range(30):                      # 4.0 per 5 min = 48/h
+            insert("dying", base + i * step, 200 - i * 4.0)
         analyzer.on_sample("dying", {"pay_model": "prepaid_balance"}, sample(20.0), world)
         if not any(a["kind"] == "runway" for a in lines()):
             failures.append("runway alert never fired on a nearly-empty balance")
 
         # --- the headline detector: sustained spend well above normal -------
-        for i in range(24):                      # calm: 0.1 per 5 min = 1.2/h
+        for i in range(30):                      # calm: 0.1 per 5 min = 1.2/h
             insert("spiky", base + i * step, 800 - i * 0.1)
         analyzer.anomaly_since["spiky"] = now() - (ANOMALY_SUSTAIN_SEC + 60)
         burst_start = now() - 700
-        for i in range(4):                       # burst: 2.0 per 3 min = 40/h
-            insert("spiky", burst_start + i * 180, 797.6 - i * 2.0)
-        analyzer.on_sample("spiky", {"pay_model": "prepaid_balance"}, sample(789.6), world)
+        for i in range(5):                       # burst: 2.0 per 3 min = 40/h
+            insert("spiky", burst_start + i * 175, 797.0 - i * 2.0)
+        analyzer.on_sample("spiky", {"pay_model": "prepaid_balance"}, sample(789.0), world)
         spikes = [a for a in lines() if a["kind"] == "burn_anomaly"]
         if not spikes:
-            failures.append("burn anomaly never fired on a sustained 30x burst")
+            failures.append("burn anomaly never fired on a sustained burst")
         elif spikes[0].get("ratio", 0) < ANOMALY_RATIO:
             failures.append("burn anomaly fired with a ratio below its own threshold")
 
         # --- a top-up must not be mistaken for a spend spike ----------------
-        before_topup = len(lines())
-        insert("spiky", now() - 60, 5000.0)      # someone topped the account up
-        analyzer.on_sample("spiky", {"pay_model": "prepaid_balance"}, sample(5000.0), world)
-        if len(lines()) != before_topup:
+        # Deliberately on a provider with no cooldown row, so a pass here means
+        # the top-up logic held rather than the suppression logic.
+        for i in range(30):
+            insert("gifted", base + i * step, 400 - i * 0.5)
+        insert("gifted", now() - 30, 9000.0)
+        analyzer.on_sample("gifted", {"pay_model": "prepaid_balance"}, sample(9000.0), world)
+        if any(a["provider"] == "gifted" for a in lines()):
             failures.append("a top-up produced an alert; the task calls that normal operations")
+
+        # --- a changed response shape must be reported ----------------------
+        analyzer.on_sample("steady", {"pay_model": "prepaid_balance"},
+                           sample(400.0, shape="wallet_balance_usd@flat"), world,
+                           shape_history={"balance@flat"})
+        if not any(a["kind"] == "shape" for a in lines()):
+            failures.append("a response-shape change raised no alert")
+
+        # --- a trailing total is not a rate; its derivative is --------------
+        for i in range(30):                      # calm accrual: 1.0 per 5 min = 12/h
+            insert("report", base + i * step, None, model="spend_report", spend_24h=100 + i * 1.0)
+        for i in range(6):                       # burst: 20 per 2 min = 600/h
+            insert("report", now() - 800 + i * 120, None, model="spend_report",
+                   spend_24h=130 + i * 20.0)
+        analyzer.anomaly_since["spend:report"] = now() - (ANOMALY_SUSTAIN_SEC + 60)
+        analyzer.on_sample("report", {"pay_model": "spend_report"},
+                           sample(None, model="spend_report", spend_24h=230.0), world)
+        if not any(a["kind"] == "spend_spike" for a in lines()):
+            failures.append("a spend-report account with a 50x accrual burst raised nothing; "
+                            "that detector was unreachable before")
 
         # --- 200-with-no-body must be reported, not read as calm ------------
         for _ in range(STALE_FAILURES):
@@ -950,6 +1133,17 @@ def self_test() -> int:
             failures.append("cooldown did not suppress a repeat alert ({} new lines)".format(after - before))
         if not alerter.fire("runway:dying2", "critical", "dying2", "a different key must pass"):
             failures.append("cooldown suppressed a different alert key")
+
+        # A value oscillating across a threshold clears and re-fires. Deleting
+        # the state row on clear() erased the cooldown with it, and twelve polls
+        # produced six identical lines inside one second.
+        before = len(lines())
+        for _ in range(12):
+            alerter.clear("runway:dying")
+            alerter.fire("runway:dying", "critical", "dying", "flapping across the threshold")
+        if len(lines()) != before:
+            failures.append("clear() reset the cooldown: {} extra lines from a flapping value".format(
+                len(lines()) - before))
 
         # --- every alert line must carry ts with an offset, and text --------
         for line in alerts_path.read_text(encoding="utf-8").splitlines():
