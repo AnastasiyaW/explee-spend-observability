@@ -891,7 +891,14 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
         median, buckets = baseline_rate(conn, provider, world)
         recent_burn = spend_rate(conn, provider, now() - BURN_WINDOW_SEC, world) or 0.0
         samples_seen = reading_count(conn, provider, world)
-        warm = samples_seen >= WARMUP_BURN_SAMPLES and buckets >= 3
+        if not samples_seen:
+            # Spend-report accounts store no balance, so counting balance rows
+            # reports them as having no data at all. They are being read; they
+            # just have nothing a balance column can hold.
+            samples_seen = conn.execute(
+                "SELECT count(*) FROM samples WHERE provider=? AND ok=1 AND ts>=?",
+                (provider, now() - BASELINE_WINDOW_SEC)).fetchone()[0]
+        warm = reading_count(conn, provider, world) >= WARMUP_BURN_SAMPLES and buckets >= 3
         value = last_ok["value"] if last_ok else None
         rate = median or recent_burn
         # A runway derived from a baseline the alerting layer would refuse to
@@ -907,6 +914,7 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
             "value": value,
             "capacity": last_ok["capacity"] if last_ok else None,
             "spend_24h": last_ok["spend_24h"] if last_ok else None,
+            "spend_30d": last_ok["spend_30d"] if last_ok else None,
             "burn_per_h": round(recent_burn, 4),
             "baseline_per_h": round(median, 4) if median else None,
             "runway_h": round(runway, 2) if runway else None,
