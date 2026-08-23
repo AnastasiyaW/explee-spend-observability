@@ -1,8 +1,123 @@
 {
- "generated": "2026-08-23T10:13:48+00:00",
+ "generated": "2026-08-23T10:15:21+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
+ },
+ "api": {
+  "reads": 1902,
+  "ok": 1720,
+  "failed": 182,
+  "success_pct": 90.43,
+  "latency_ms": {
+   "p50": 153.0,
+   "p95": 364.7,
+   "max": 3445.4
+  },
+  "faults": [
+   {
+    "kind": "500 upstream 500",
+    "count": 60,
+    "providers": 3
+   },
+   {
+    "kind": "429 rate limited (429)",
+    "count": 54,
+    "providers": 2
+   },
+   {
+    "kind": "503 upstream 503",
+    "count": 24,
+    "providers": 1
+   },
+   {
+    "kind": "504 The origin web server did not respond to",
+    "count": 23,
+    "providers": 13
+   },
+   {
+    "kind": "200 empty json object",
+    "count": 21,
+    "providers": 11
+   }
+  ],
+  "per_provider": {
+   "tremendous": {
+    "reads": 105,
+    "failed": 33,
+    "failure_pct": 31.4
+   },
+   "findymail": {
+    "reads": 86,
+    "failed": 25,
+    "failure_pct": 29.1
+   },
+   "vastai": {
+    "reads": 129,
+    "failed": 26,
+    "failure_pct": 20.2
+   },
+   "openai": {
+    "reads": 131,
+    "failed": 25,
+    "failure_pct": 19.1
+   },
+   "anthropic": {
+    "reads": 134,
+    "failed": 21,
+    "failure_pct": 15.7
+   },
+   "brightdata": {
+    "reads": 133,
+    "failed": 19,
+    "failure_pct": 14.3
+   },
+   "bounceban": {
+    "reads": 133,
+    "failed": 6,
+    "failure_pct": 4.5
+   },
+   "resend": {
+    "reads": 132,
+    "failed": 6,
+    "failure_pct": 4.5
+   },
+   "elevenlabs": {
+    "reads": 134,
+    "failed": 4,
+    "failure_pct": 3.0
+   },
+   "meta_ads": {
+    "reads": 132,
+    "failed": 4,
+    "failure_pct": 3.0
+   },
+   "openrouter": {
+    "reads": 131,
+    "failed": 3,
+    "failure_pct": 2.3
+   },
+   "twocaptcha": {
+    "reads": 130,
+    "failed": 3,
+    "failure_pct": 2.3
+   },
+   "zerobounce": {
+    "reads": 130,
+    "failed": 3,
+    "failure_pct": 2.3
+   },
+   "evomi": {
+    "reads": 132,
+    "failed": 2,
+    "failure_pct": 1.5
+   },
+   "scrapfly": {
+    "reads": 130,
+    "failed": 2,
+    "failure_pct": 1.5
+   }
+  }
  },
  "window_note": "runway uses the median burn over the last 4h; increases are treated as top-ups and never enter the baseline",
  "providers": [
@@ -10,19 +125,19 @@
    "provider": "evomi",
    "model": "prepaid_balance",
    "unit": "usd",
-   "value": 318.36,
+   "value": 318.3,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 6.0344,
-   "baseline_per_h": 9.6971,
-   "runway_h": 32.83,
+   "burn_per_h": 5.2491,
+   "baseline_per_h": 9.7351,
+   "runway_h": 32.7,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:40+00:00",
-   "last_ok_seen": "2026-08-23T10:13:40+00:00",
-   "samples": 126,
+   "last_seen": "2026-08-23T10:15:10+00:00",
+   "last_ok_seen": "2026-08-23T10:15:10+00:00",
+   "samples": 130,
    "topups_6h": 0,
    "series": [
     [
@@ -528,6 +643,22 @@
     [
      1787480021,
      318.36
+    ],
+    [
+     1787480043,
+     318.35
+    ],
+    [
+     1787480066,
+     318.33
+    ],
+    [
+     1787480089,
+     318.32
+    ],
+    [
+     1787480111,
+     318.3
     ]
    ]
   },
@@ -535,19 +666,19 @@
    "provider": "scrapfly",
    "model": "credits_package",
    "unit": "credits",
-   "value": 37840.0,
+   "value": 37814.0,
    "capacity": 50000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 945.2736,
-   "baseline_per_h": 979.9894,
-   "runway_h": 38.61,
+   "burn_per_h": 954.9525,
+   "baseline_per_h": 983.8299,
+   "runway_h": 38.44,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:26+00:00",
-   "last_ok_seen": "2026-08-23T10:13:26+00:00",
-   "samples": 124,
+   "last_seen": "2026-08-23T10:14:57+00:00",
+   "last_ok_seen": "2026-08-23T10:14:57+00:00",
+   "samples": 128,
    "topups_6h": 0,
    "series": [
     [
@@ -1045,6 +1176,22 @@
     [
      1787480007,
      37840.0
+    ],
+    [
+     1787480031,
+     37833.0
+    ],
+    [
+     1787480052,
+     37827.0
+    ],
+    [
+     1787480075,
+     37821.0
+    ],
+    [
+     1787480097,
+     37814.0
     ]
    ]
   },
@@ -1056,15 +1203,15 @@
    "capacity": 8000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 29.1821,
-   "baseline_per_h": 101.8204,
-   "runway_h": 69.44,
+   "burn_per_h": 24.8771,
+   "baseline_per_h": 95.2079,
+   "runway_h": 74.26,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:29+00:00",
-   "last_ok_seen": "2026-08-23T10:13:29+00:00",
-   "samples": 124,
+   "last_seen": "2026-08-23T10:15:02+00:00",
+   "last_ok_seen": "2026-08-23T10:15:02+00:00",
+   "samples": 127,
    "topups_6h": 1,
    "series": [
     [
@@ -1562,6 +1709,18 @@
     [
      1787480009,
      7070.0
+    ],
+    [
+     1787480058,
+     7070.0
+    ],
+    [
+     1787480080,
+     7070.0
+    ],
+    [
+     1787480102,
+     7070.0
     ]
    ]
   },
@@ -1569,19 +1728,19 @@
    "provider": "openai",
    "model": "prepaid_balance",
    "unit": "usd",
-   "value": 653.57,
+   "value": 653.44,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 5.6156,
-   "baseline_per_h": 5.8488,
-   "runway_h": 111.74,
+   "burn_per_h": 5.5646,
+   "baseline_per_h": 5.8527,
+   "runway_h": 111.65,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:39+00:00",
-   "last_ok_seen": "2026-08-23T10:13:39+00:00",
-   "samples": 102,
+   "last_seen": "2026-08-23T10:15:08+00:00",
+   "last_ok_seen": "2026-08-23T10:15:08+00:00",
+   "samples": 106,
    "topups_6h": 0,
    "series": [
     [
@@ -1991,6 +2150,22 @@
     [
      1787480020,
      653.57
+    ],
+    [
+     1787480042,
+     653.54
+    ],
+    [
+     1787480064,
+     653.51
+    ],
+    [
+     1787480085,
+     653.47
+    ],
+    [
+     1787480108,
+     653.44
     ]
    ]
   },
@@ -1998,19 +2173,19 @@
    "provider": "openrouter",
    "model": "prepaid_balance",
    "unit": "usd",
-   "value": 270.37,
+   "value": 270.32,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 1.9168,
-   "baseline_per_h": 2.1074,
-   "runway_h": 128.29,
+   "burn_per_h": 1.9184,
+   "baseline_per_h": 2.1376,
+   "runway_h": 126.46,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:37+00:00",
-   "last_ok_seen": "2026-08-23T10:13:37+00:00",
-   "samples": 124,
+   "last_seen": "2026-08-23T10:15:09+00:00",
+   "last_ok_seen": "2026-08-23T10:15:09+00:00",
+   "samples": 128,
    "topups_6h": 0,
    "series": [
     [
@@ -2508,6 +2683,22 @@
     [
      1787480017,
      270.37
+    ],
+    [
+     1787480041,
+     270.35
+    ],
+    [
+     1787480065,
+     270.34
+    ],
+    [
+     1787480088,
+     270.33
+    ],
+    [
+     1787480110,
+     270.32
     ]
    ]
   },
@@ -2515,19 +2706,19 @@
    "provider": "brightdata",
    "model": "prepaid_balance",
    "unit": "usd",
-   "value": 987.86,
+   "value": 987.69,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 6.1389,
-   "baseline_per_h": 6.7303,
-   "runway_h": 146.78,
+   "burn_per_h": 6.188,
+   "baseline_per_h": 6.7959,
+   "runway_h": 145.34,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:30+00:00",
-   "last_ok_seen": "2026-08-23T10:13:30+00:00",
-   "samples": 110,
+   "last_seen": "2026-08-23T10:15:05+00:00",
+   "last_ok_seen": "2026-08-23T10:15:05+00:00",
+   "samples": 114,
    "topups_6h": 0,
    "series": [
     [
@@ -2969,6 +3160,22 @@
     [
      1787480011,
      987.86
+    ],
+    [
+     1787480037,
+     987.81
+    ],
+    [
+     1787480060,
+     987.77
+    ],
+    [
+     1787480083,
+     987.73
+    ],
+    [
+     1787480106,
+     987.69
     ]
    ]
   },
@@ -2976,19 +3183,19 @@
    "provider": "findymail",
    "model": "credits_package",
    "unit": "credits",
-   "value": 8986.0,
+   "value": 8984.0,
    "capacity": 12000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 56.9195,
-   "baseline_per_h": 55.2037,
-   "runway_h": 162.78,
+   "burn_per_h": 55.3645,
+   "baseline_per_h": 54.5925,
+   "runway_h": 164.56,
    "warm": true,
-   "healthy": false,
-   "last_error": "rate limited (429)",
-   "last_seen": "2026-08-23T10:13:34+00:00",
-   "last_ok_seen": "2026-08-23T10:12:41+00:00",
-   "samples": 59,
+   "healthy": true,
+   "last_error": null,
+   "last_seen": "2026-08-23T10:15:00+00:00",
+   "last_ok_seen": "2026-08-23T10:15:00+00:00",
+   "samples": 61,
    "topups_6h": 0,
    "series": [
     [
@@ -3226,6 +3433,14 @@
     [
      1787479961,
      8986.0
+    ],
+    [
+     1787480077,
+     8985.0
+    ],
+    [
+     1787480101,
+     8984.0
     ]
    ]
   },
@@ -3233,19 +3448,19 @@
    "provider": "zerobounce",
    "model": "credits_package",
    "unit": "credits",
-   "value": 111777.0,
+   "value": 111761.0,
    "capacity": 150000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 563.9481,
-   "baseline_per_h": 571.0016,
-   "runway_h": 195.76,
+   "burn_per_h": 553.9177,
+   "baseline_per_h": 570.6134,
+   "runway_h": 195.86,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:27+00:00",
-   "last_ok_seen": "2026-08-23T10:13:27+00:00",
-   "samples": 122,
+   "last_seen": "2026-08-23T10:15:19+00:00",
+   "last_ok_seen": "2026-08-23T10:15:19+00:00",
+   "samples": 127,
    "topups_6h": 0,
    "series": [
     [
@@ -3735,6 +3950,26 @@
     [
      1787480008,
      111777.0
+    ],
+    [
+     1787480029,
+     111774.0
+    ],
+    [
+     1787480052,
+     111771.0
+    ],
+    [
+     1787480076,
+     111767.0
+    ],
+    [
+     1787480098,
+     111764.0
+    ],
+    [
+     1787480119,
+     111761.0
     ]
    ]
   },
@@ -3742,19 +3977,19 @@
    "provider": "elevenlabs",
    "model": "credits_package",
    "unit": "credits",
-   "value": 909129.0,
+   "value": 909014.0,
    "capacity": 1000000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 3922.0052,
-   "baseline_per_h": 4247.386,
-   "runway_h": 214.04,
+   "burn_per_h": 3893.8357,
+   "baseline_per_h": 4230.6166,
+   "runway_h": 214.87,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:27+00:00",
-   "last_ok_seen": "2026-08-23T10:13:27+00:00",
-   "samples": 125,
+   "last_seen": "2026-08-23T10:15:17+00:00",
+   "last_ok_seen": "2026-08-23T10:15:17+00:00",
+   "samples": 130,
    "topups_6h": 0,
    "series": [
     [
@@ -4256,6 +4491,26 @@
     [
      1787480008,
      909129.0
+    ],
+    [
+     1787480029,
+     909106.0
+    ],
+    [
+     1787480051,
+     909084.0
+    ],
+    [
+     1787480073,
+     909060.0
+    ],
+    [
+     1787480096,
+     909036.0
+    ],
+    [
+     1787480117,
+     909014.0
     ]
    ]
   },
@@ -4267,15 +4522,15 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 0.3321,
-   "baseline_per_h": 0.3427,
-   "runway_h": 218.72,
+   "burn_per_h": 0.289,
+   "baseline_per_h": 0.32,
+   "runway_h": 234.25,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:29+00:00",
-   "last_ok_seen": "2026-08-23T10:13:29+00:00",
-   "samples": 123,
+   "last_seen": "2026-08-23T10:15:01+00:00",
+   "last_ok_seen": "2026-08-23T10:15:01+00:00",
+   "samples": 127,
    "topups_6h": 1,
    "series": [
     [
@@ -4769,6 +5024,22 @@
     [
      1787480009,
      74.95
+    ],
+    [
+     1787480035,
+     74.95
+    ],
+    [
+     1787480057,
+     74.95
+    ],
+    [
+     1787480078,
+     74.95
+    ],
+    [
+     1787480101,
+     74.95
     ]
    ]
   },
@@ -4776,19 +5047,19 @@
    "provider": "resend",
    "model": "credits_package",
    "unit": "credits",
-   "value": 42762.0,
+   "value": 42756.0,
    "capacity": 50000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 187.385,
-   "baseline_per_h": 171.1592,
-   "runway_h": 249.84,
+   "burn_per_h": 191.4406,
+   "baseline_per_h": 174.4461,
+   "runway_h": 245.1,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:48+00:00",
-   "last_ok_seen": "2026-08-23T10:13:48+00:00",
-   "samples": 122,
+   "last_seen": "2026-08-23T10:15:20+00:00",
+   "last_ok_seen": "2026-08-23T10:15:20+00:00",
+   "samples": 126,
    "topups_6h": 0,
    "series": [
     [
@@ -5278,6 +5549,22 @@
     [
      1787480028,
      42762.0
+    ],
+    [
+     1787480049,
+     42760.0
+    ],
+    [
+     1787480074,
+     42759.0
+    ],
+    [
+     1787480097,
+     42758.0
+    ],
+    [
+     1787480120,
+     42756.0
     ]
    ]
   },
@@ -5285,19 +5572,19 @@
    "provider": "tremendous",
    "model": "prepaid_balance",
    "unit": "gbp",
-   "value": 2003.38,
+   "value": 2003.35,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 1.9706,
-   "baseline_per_h": 1.9501,
-   "runway_h": 1027.33,
+   "burn_per_h": 1.9887,
+   "baseline_per_h": 1.9441,
+   "runway_h": 1030.49,
    "warm": true,
-   "healthy": true,
-   "last_error": null,
-   "last_seen": "2026-08-23T10:13:42+00:00",
-   "last_ok_seen": "2026-08-23T10:13:42+00:00",
-   "samples": 70,
+   "healthy": false,
+   "last_error": "rate limited (429)",
+   "last_seen": "2026-08-23T10:14:50+00:00",
+   "last_ok_seen": "2026-08-23T10:14:27+00:00",
+   "samples": 72,
    "topups_6h": 0,
    "series": [
     [
@@ -5579,6 +5866,14 @@
     [
      1787480023,
      2003.38
+    ],
+    [
+     1787480045,
+     2003.37
+    ],
+    [
+     1787480068,
+     2003.35
     ]
    ]
   },
@@ -5588,7 +5883,7 @@
    "unit": "usd",
    "value": null,
    "capacity": null,
-   "spend_24h": 109.65,
+   "spend_24h": 109.23,
    "spend_30d": null,
    "burn_per_h": 0.0,
    "baseline_per_h": null,
@@ -5596,9 +5891,9 @@
    "warm": false,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:29+00:00",
-   "last_ok_seen": "2026-08-23T10:13:29+00:00",
-   "samples": 108,
+   "last_seen": "2026-08-23T10:15:21+00:00",
+   "last_ok_seen": "2026-08-23T10:15:21+00:00",
+   "samples": 113,
    "topups_6h": 0,
    "series": []
   },
@@ -5608,17 +5903,17 @@
    "unit": "usd",
    "value": null,
    "capacity": null,
-   "spend_24h": 367.18,
-   "spend_30d": 11015.3,
+   "spend_24h": 367.41,
+   "spend_30d": 11022.26,
    "burn_per_h": 0.0,
    "baseline_per_h": null,
    "runway_h": null,
    "warm": false,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:38+00:00",
-   "last_ok_seen": "2026-08-23T10:13:38+00:00",
-   "samples": 124,
+   "last_seen": "2026-08-23T10:15:08+00:00",
+   "last_ok_seen": "2026-08-23T10:15:08+00:00",
+   "samples": 128,
    "topups_6h": 0,
    "series": []
   },
@@ -5626,19 +5921,19 @@
    "provider": "vastai",
    "model": "postpaid",
    "unit": "usd",
-   "value": -159.49,
+   "value": -159.73,
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 8.8376,
-   "baseline_per_h": 8.8366,
+   "burn_per_h": 8.9232,
+   "baseline_per_h": 8.8666,
    "runway_h": null,
    "warm": true,
    "healthy": true,
    "last_error": null,
-   "last_seen": "2026-08-23T10:13:30+00:00",
-   "last_ok_seen": "2026-08-23T10:13:30+00:00",
-   "samples": 99,
+   "last_seen": "2026-08-23T10:15:03+00:00",
+   "last_ok_seen": "2026-08-23T10:15:03+00:00",
+   "samples": 103,
    "topups_6h": 0,
    "series": [
     [
@@ -6036,6 +6331,22 @@
     [
      1787480011,
      -159.49
+    ],
+    [
+     1787480037,
+     -159.56
+    ],
+    [
+     1787480058,
+     -159.61
+    ],
+    [
+     1787480081,
+     -159.67
+    ],
+    [
+     1787480104,
+     -159.73
     ]
    ]
   }
