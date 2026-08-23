@@ -33,17 +33,7 @@
     <h1>Picking a transcriber for Russian meetings that speak IT.</h1>
     <p class="lede">The test is not a generic speech-recognition leaderboard. Every candidate receives the same frozen hour of Russian speech with dense English product, vendor and engineering terms.</p>
 
-    <section class="facts" aria-label="Experiment facts">
-      <div class="fact"><b>8</b><span>model variants</span></div>
-      <div class="fact"><b>6</b><span>independent STT families</span></div>
-      <div class="fact"><b>60 min</b><span>identical audio per variant</span></div>
-      <div class="fact"><b>25 s</b><span>exact zero-overlap chunks</span></div>
-    </section>
-
-    <section class="panel status" aria-live="polite">
-      <div><h2>Inference collection is complete.</h2><p>All seven GPU variants passed their admission canary, and the explicit CPU-only Vosk baseline is complete. Every transcript is provenance-validated; human adjudication is the remaining quality gate.</p></div>
-      <div class="count">32 / 32<br><span style="font-size:12px;letter-spacing:0;font-weight:600">artifacts admitted</span></div>
-    </section>
+    <p class="lede" style="margin-top:24px">Eight variants from six independent STT families processed the same 60 minutes in fixed 25-second, zero-overlap windows. Collection is complete: all seven GPU variants passed their admission canary, the CPU-only Vosk baseline completed, and 32 of 32 transcript artifacts were admitted. Human adjudication remains the quality gate.</p>
 
     <h2>Measured GPU throughput</h2>
     <section class="panel table-wrap" aria-label="Measured throughput for completed GPU variants">
