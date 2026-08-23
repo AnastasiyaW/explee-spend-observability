@@ -98,6 +98,7 @@ const I18N = {
     "spend.topup": "пополнение",
     "spend.standlink.a": "Стенд ответил на",
     "spend.standlink.b": "чтений",
+    "spend.standlink.mostly": "отказы в основном —",
     "spend.standlink.go": "как именно он ломается →",
     "spend.standlink.plain": "как ведёт себя стенд →",
     "spend.foot": "Общей цифры расхода здесь нет намеренно: аккаунты номинированы в USD, GBP и кредитах, " +

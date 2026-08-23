@@ -87,6 +87,9 @@ function esc(s){
   return String(s === null || s === undefined ? "" : s)
     .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
+function n(x){
+  return (x === null || x === undefined) ? "\u2014" : Number(x).toLocaleString("en-US");
+}
 function fmt(n, digits){
   if (n === null || n === undefined) return "—";
   const d = digits === undefined ? 2 : digits;
@@ -274,10 +277,18 @@ function render(d){
     ? t("spend.alerts.verbatim", "") : "";
 
   const api = d.api || {};
+  // What the other few per cent were. The number without this raises the
+  // question and sends the reader to another page to answer it.
+  const worst = (api.faults || []).slice(0, 2)
+    .map(f => esc(String(f.kind).replace(/^(\d{3}|-)\s*/, m => m.trim() === "-" ? "" : m))
+              + " <b>" + n(f.count) + "</b>")
+    .join(", ");
   document.getElementById("standlink").innerHTML = api.reads
     ? t("spend.standlink.a", "The stand answered") + ' <b>' + api.success_pct + '%</b> '
       + t("spend.standlink.of", "of") + ' ' + api.reads.toLocaleString("en-US") + ' '
       + t("spend.standlink.b", "reads")
+      + (worst ? ' <span class="sep">&middot;</span> '
+                 + t("spend.standlink.mostly", "the failures are mostly") + ' ' + worst : '')
       + ' <span class="sep">&middot;</span> <a class="btn" href="stand.html">'
       + t("spend.standlink.go", "how it misbehaves &rarr;") + '</a>'
     : '<a class="btn" href="stand.html">'
