@@ -80,7 +80,11 @@ def classify(block) -> str:
     if role.startswith("System"):
         return "system"
     if role.startswith("User"):
-        if TOOL_RESULT.search(body):
+        # Two harnesses, two conventions. Claude Code files a tool result under
+        # a plain "User" role and marks it in the body; the Codex export says so
+        # in the role itself. Trusting only the body marker would have promoted
+        # 1,101 machine records to things the person said.
+        if "tool result" in role.lower() or TOOL_RESULT.search(body):
             return "tool_result"
         # A background agent finishing, or a hook answering back, arrives on the
         # human's own channel. The exporter labels these correctly now, but the
