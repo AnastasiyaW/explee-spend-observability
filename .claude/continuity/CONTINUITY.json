@@ -7,7 +7,9 @@
     "repo_root": "<workspace>/explee-test",
     "branch": "main",
     "head": "1e406da",
-    "preexisting_paths": ["spend_monitor.py"]
+    "preexisting_paths": [
+      "spend_monitor.py"
+    ]
   },
   "scope": {
     "enforce": true,
@@ -26,7 +28,15 @@
       "docs/stand.html",
       "docs/stt.html",
       "docs/reviews/2026-08-23-deep-review.md",
-      "task3-distill-feedback.md"
+      "task3-distill-feedback.md",
+      "publish.sh",
+      "alerts.jsonl",
+      "PROBLEMS.md",
+      "docs/i18n.js",
+      "docs/trace.html",
+      "TRACE-task1.redacted.md",
+      "render_trace.py",
+      ".gitattributes"
     ]
   },
   "preserve": [
@@ -53,8 +63,54 @@
     ]
   },
   "verification": [
-    {"command": "python spend_monitor.py --self-test", "status": "passed", "evidence": "SELF-TEST: PASS"},
-    {"command": "python mutation_test.py", "status": "passed", "evidence": "12 of 12 mutants killed; exit 0, including cross-world shape history"},
-    {"command": "ssh <monitor-host> 'systemctl --user is-active explee-monitor.service; cd ~/explee-monitor && python3 spend_monitor.py stats'", "status": "pending", "evidence": "baseline service was active, but fresh verifier proved live source still predates the reviewed world-scoping fix; deploy and live parity check required"}
+    {
+      "command": "python spend_monitor.py --self-test",
+      "status": "passed",
+      "evidence": "SELF-TEST: PASS"
+    },
+    {
+      "command": "python mutation_test.py",
+      "status": "passed",
+      "evidence": "12 of 12 mutants killed; exit 0, including cross-world shape history"
+    },
+    {
+      "command": "ssh <monitor-host> 'systemctl --user is-active explee-monitor.service; cd ~/explee-monitor && python3 spend_monitor.py stats'",
+      "status": "pending",
+      "evidence": "baseline service was active, but fresh verifier proved live source still predates the reviewed world-scoping fix; deploy and live parity check required"
+    }
+  ],
+  "scope_changes": [
+    {
+      "at": "2026-08-23",
+      "added": [
+        "publish.sh",
+        "alerts.jsonl",
+        "PROBLEMS.md"
+      ],
+      "reason": "The brief names alerts.jsonl as a deliverable of Task 1; it existed only on the collector host because publish.sh never sent it to the data branch, so both README links returned 404. Publishing it needs the alert log in the repository and the publishing script under review instead of host-only. PROBLEMS.md carries the stale entry this work closes."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        "docs/i18n.js",
+        "docs/trace.html",
+        "TRACE-task1.redacted.md"
+      ],
+      "reason": "User asked for the site to offer Russian alongside English (English stays the default) and for the agent trace to be delivered as a readable page rather than a raw log. The trace markdown stays the verbatim artefact; the page renders it without changing a word."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        "render_trace.py"
+      ],
+      "reason": "The trace page is generated from the verbatim markdown by a script, so the rendering is reproducible and auditable rather than hand-built HTML that could quietly differ from the artefact."
+    },
+    {
+      "at": "2026-08-23",
+      "added": [
+        ".gitattributes"
+      ],
+      "reason": "publish.sh is committed from Windows and executed on Linux; line endings must be decided by the repository, not by whichever machine commits."
+    }
   ]
 }

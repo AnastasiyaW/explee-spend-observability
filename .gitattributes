@@ -1,0 +1,5 @@
+# The collector runs on Linux and publish.sh is executed there, so line endings
+# are decided by the repository rather than by whichever machine commits.
+* text=auto eol=lf
+*.png binary
+*.jpg binary

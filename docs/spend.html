@@ -67,30 +67,42 @@
   footer{margin-top:30px;color:var(--muted);font-size:12.5px;line-height:1.65}
   footer code{font:11.5px ui-monospace,Consolas,monospace}
   svg.spark{display:block}
+  .langswitch{position:fixed;top:12px;right:14px;display:flex;gap:0;z-index:5;
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}
+  .langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
+    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}
+  .langswitch button[aria-current="true"]{background:var(--accent);color:#fff}
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <p style="margin:0 0 10px"><a href="./" style="color:var(--accent);text-decoration:none;font-size:13px">&larr; all three tasks</a></p>
-  <h1>Spend observability</h1>
+  <p style="margin:0 0 10px"><a href="./" style="color:var(--accent);text-decoration:none;font-size:13px" data-i18n="spend.back">&larr; all three tasks</a></p>
+  <h1 data-i18n="spend.h1">Spend observability</h1>
   <p class="sub" id="sub">loading…</p>
 
   <div class="banner" id="banner"></div>
   <div class="cards" id="cards"></div>
 
-  <h2>Every account, soonest to run out first</h2>
+  <h2 data-i18n="spend.h2.table">Every account, soonest to run out first</h2>
   <div class="scroll">
     <table>
       <thead><tr>
-        <th>Provider</th><th>Model</th><th class="num">Balance</th>
-        <th class="num">Burn / h</th><th class="num">Normal / h</th>
-        <th class="num">Runway</th><th>Last 6h</th><th>Health</th>
+        <th data-i18n="spend.th.provider">Provider</th>
+        <th data-i18n="spend.th.model">Model</th>
+        <th class="num" data-i18n="spend.th.balance">Balance</th>
+        <th class="num" data-i18n="spend.th.burn">Burn / h</th>
+        <th class="num" data-i18n="spend.th.normal">Normal / h</th>
+        <th class="num" data-i18n="spend.th.runway">Runway</th>
+        <th data-i18n="spend.th.spark">Last 6h</th>
+        <th data-i18n="spend.th.health">Health</th>
       </tr></thead>
       <tbody id="rows"></tbody>
     </table>
   </div>
 
-  <h2>Alerts</h2>
+  <h2 data-i18n="spend.h2.alerts">Alerts</h2>
+  <p class="sub" id="alertnote" style="margin:-4px 0 8px"></p>
   <div class="alerts" id="alerts"></div>
 
   <p class="sub" id="standlink" style="margin-top:14px"></p>
@@ -104,6 +116,14 @@ const DATA_URLS = [
   "https://raw.githubusercontent.com/AnastasiyaW/explee-spend-observability/data/data.json"
 ];
 
+// Everything below this line except our own numbers came from the stand, and the
+// whole design says the stand is not to be trusted. A provider that answers
+// {"error":"<img src=x onerror=...>"} would otherwise have that string stored,
+// published in data.json and executed here.
+function esc(s){
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
 function fmt(n, digits){
   if (n === null || n === undefined) return "—";
   const d = digits === undefined ? 2 : digits;
@@ -111,9 +131,9 @@ function fmt(n, digits){
 }
 function hours(h){
   if (h === null || h === undefined) return "—";
-  if (h < 1) return Math.round(h * 60) + " min";
-  if (h < 48) return h.toFixed(1) + " h";
-  return (h / 24).toFixed(1) + " d";
+  if (h < 1) return Math.round(h * 60) + " " + t("unit.min", "min");
+  if (h < 48) return h.toFixed(1) + " " + t("unit.h", "h");
+  return (h / 24).toFixed(1) + " " + t("unit.d", "d");
 }
 function runwayClass(h){
   if (h === null || h === undefined) return "muted";
@@ -135,28 +155,34 @@ function spark(series){
 }
 function ago(iso){
   const secs = (Date.now() - new Date(iso).getTime())/1000;
-  if (secs < 90) return Math.round(secs) + "s ago";
-  if (secs < 5400) return Math.round(secs/60) + " min ago";
-  return (secs/3600).toFixed(1) + " h ago";
+  if (secs < 90) return Math.round(secs) + t("ago.s", "s ago");
+  if (secs < 5400) return Math.round(secs/60) + " " + t("ago.min", "min ago");
+  return (secs/3600).toFixed(1) + " " + t("ago.h", "h ago");
 }
 
+let LAST = null;
 function render(d){
+  LAST = d;
   const ps = d.providers || [];
   const alerts = d.alerts || [];
   const stale = Math.round((Date.now() - new Date(d.generated).getTime())/1000);
 
   document.getElementById("sub").innerHTML =
-    "<b>" + ps.length + "</b> accounts watched · data " + ago(d.generated) +
-    " · <b>" + alerts.length + "</b> alerts on file";
+    "<b>" + ps.length + "</b> " + t("spend.sub.accounts", "accounts watched") + " · "
+    + t("spend.sub.data", "data") + " " + ago(d.generated)
+    + " · <b>" + alerts.length + "</b> " + t("spend.sub.alerts", "alerts on file");
 
   const w = d.world || {};
   document.getElementById("banner").innerHTML =
     '<span><span class="dot" style="background:' + (stale < 180 ? "var(--ok)" : "var(--crit)") + '"></span>'
-    + (stale < 180 ? "collector live" : "collector stale (" + Math.round(stale/60) + " min)") + '</span>'
-    + '<span><span class="k">world</span> <code>' + (w.fingerprint || "?") + '</code></span>'
-    + '<span><span class="k">epoch</span> <code>'
+    + (stale < 180 ? t("spend.live", "collector live")
+                   : t("spend.stale", "collector stale") + " (" + Math.round(stale/60) + " "
+                     + t("unit.min", "min") + ")") + '</span>'
+    + '<span><span class="k">' + t("spend.world", "world") + '</span> <code>'
+    + esc(w.fingerprint || "?") + '</code></span>'
+    + '<span><span class="k">' + t("spend.epoch", "epoch") + '</span> <code>'
     + (w.world_epoch ? new Date(w.world_epoch*1000).toISOString().replace(".000Z","Z") : "?") + '</code></span>'
-    + '<span class="k">history resets if either changes</span>';
+    + '<span class="k">' + t("spend.worldnote", "history resets if either changes") + '</span>';
 
   // The headline numbers. There is deliberately no single "total spend":
   // usd, gbp and credits do not add up, and two accounts expose no balance.
@@ -169,14 +195,16 @@ function render(d){
                     .reduce((s,p) => s + (p.burn_per_h||0), 0);
 
   document.getElementById("cards").innerHTML = [
-    ['Soonest to run dry', soonest ? hours(soonest.runway_h) : "—",
-     soonest ? soonest.provider : "no burn measured yet", soonest ? runwayClass(soonest.runway_h) : "muted"],
-    ['Accounts under 24h', String(critical + warning),
-     critical + " under 6h", (critical ? "crit" : warning ? "warn" : "ok")],
-    ['USD burn right now', "$" + fmt(usdBurn, 2) + "/h",
-     "usd accounts only — gbp and credits are not summable", "ok"],
-    ['Not reporting', String(unhealthy.length),
-     unhealthy.length ? unhealthy.map(p=>p.provider).join(", ") : "all accounts answering",
+    [t("spend.card.soonest", "Soonest to run dry"), soonest ? hours(soonest.runway_h) : "—",
+     soonest ? esc(soonest.provider) : t("spend.card.soonest.none", "no burn measured yet"),
+     soonest ? runwayClass(soonest.runway_h) : "muted"],
+    [t("spend.card.under24", "Accounts under 24h"), String(critical + warning),
+     critical + " " + t("spend.card.under6", "under 6h"), (critical ? "crit" : warning ? "warn" : "ok")],
+    [t("spend.card.usdburn", "USD burn right now"), "$" + fmt(usdBurn, 2) + "/h",
+     t("spend.card.usdburn.note", "usd accounts only — gbp and credits are not summable"), "ok"],
+    [t("spend.card.silent", "Not reporting"), String(unhealthy.length),
+     unhealthy.length ? unhealthy.map(p=>esc(p.provider)).join(", ")
+                      : t("spend.card.silent.none", "all accounts answering"),
      unhealthy.length ? "warn" : "ok"]
   ].map(c =>
     '<div class="card' + (c[3]==="crit" ? " attn" : "") + '"><div class="lbl">' + c[0] + '</div>'
@@ -184,49 +212,67 @@ function render(d){
   ).join("");
 
   document.getElementById("rows").innerHTML = ps.map(p => {
-    const unit = (p.unit || "").toUpperCase();
+    const unit = esc((p.unit || "").toUpperCase());
     let bal = "—";
     if (p.value !== null && p.value !== undefined){
       bal = fmt(p.value, p.model === "credits_package" ? 0 : 2) + " " + unit;
       if (p.capacity) bal += ' <span class="muted">/ ' + fmt(p.capacity,0) + '</span>';
     } else if (p.spend_24h !== null && p.spend_24h !== undefined){
-      bal = '<span class="muted">no balance · 24h spend</span> ' + fmt(p.spend_24h,2) + " " + unit;
+      bal = '<span class="muted">' + t("spend.nobalance", "no balance · 24h spend")
+            + '</span> ' + fmt(p.spend_24h,2) + " " + unit;
     }
     return '<tr>'
-      + '<td class="prov">' + p.provider
-        + (p.topups_6h ? ' <span class="tag">' + p.topups_6h + ' top-up</span>' : '') + '</td>'
-      + '<td><span class="tag">' + (p.model || "?").replace(/_/g," ") + '</span></td>'
+      + '<td class="prov">' + esc(p.provider)
+        + (p.topups_6h ? ' <span class="tag">' + p.topups_6h + ' '
+             + t("spend.topup", "top-up") + '</span>' : '') + '</td>'
+      + '<td><span class="tag">' + esc(t("spend.model." + (p.model || ""),
+             (p.model || "?").replace(/_/g," "))) + '</span></td>'
       + '<td class="num">' + bal + '</td>'
       + '<td class="num">' + (p.burn_per_h ? fmt(p.burn_per_h, 3) : '<span class="muted">—</span>') + '</td>'
       + '<td class="num">' + (p.baseline_per_h ? fmt(p.baseline_per_h, 3)
-          : '<span class="muted">warming</span>') + '</td>'
+          : '<span class="muted">' + t("spend.warming", "warming") + '</span>') + '</td>'
       + '<td class="num ' + runwayClass(p.runway_h) + '">' + hours(p.runway_h) + '</td>'
       + '<td>' + spark(p.series) + '</td>'
-      + '<td>' + (p.healthy ? '<span class="ok">ok</span>'
-          : '<span class="warn">' + (p.last_error || "no data") + '</span>') + '</td>'
+      + '<td>' + (p.healthy ? '<span class="ok">' + t("spend.ok", "ok") + '</span>'
+          : '<span class="warn">' + esc(p.last_error || t("spend.nodata", "no data"))
+            + '</span>') + '</td>'
       + '</tr>';
   }).join("");
 
   document.getElementById("alerts").innerHTML = alerts.length ? alerts.map(a =>
-    '<div class="alert"><time>' + (a.ts || "") + '</time>'
+    '<div class="alert"><time>' + esc(a.ts || "") + '</time>'
     + '<span class="' + (a.level === "critical" ? "crit" : a.level === "warn" ? "warn" : "muted") + '">'
     + (a.level === "critical" ? "●" : a.level === "warn" ? "▲" : "·") + '</span>'
-    + '<span>' + (a.text || "") + '</span></div>').join("")
-    : '<div class="empty">No alerts yet. The collector suppresses anomaly alerts until it has '
-      + 'enough of its own history to know what normal is.</div>';
+    + '<span>' + esc(a.text || "") + '</span></div>').join("")
+    : '<div class="empty">' + t("spend.alerts.empty",
+        "No alerts yet. The collector suppresses anomaly alerts until it has enough of its own "
+        + "history to know what normal is.") + '</div>';
+  document.getElementById("alertnote").innerHTML = (alerts.length && LANG !== "en")
+    ? t("spend.alerts.verbatim", "") : "";
 
   const api = d.api || {};
   document.getElementById("standlink").innerHTML = api.reads
-    ? 'The stand answered <b>' + api.success_pct + '%</b> of ' + api.reads.toLocaleString("en-US")
-      + ' reads &middot; <a href="stand.html">how it misbehaves &rarr;</a>'
-    : '<a href="stand.html">how the stand behaves &rarr;</a>';
+    ? t("spend.standlink.a", "The stand answered") + ' <b>' + api.success_pct + '%</b> '
+      + t("spend.standlink.of", "of") + ' ' + api.reads.toLocaleString("en-US") + ' '
+      + t("spend.standlink.b", "reads")
+      + ' &middot; <a href="stand.html">' + t("spend.standlink.go", "how it misbehaves &rarr;") + '</a>'
+    : '<a href="stand.html">' + t("spend.standlink.plain", "how the stand behaves &rarr;") + '</a>';
 
-  document.getElementById("foot").innerHTML =
-    "There is no total-spend number here on purpose: the accounts are denominated in USD, GBP and "
+  // The window note is generated by the collector in English. Rather than show a
+  // half-translated sentence, the Russian side rebuilds it from the one number it
+  // carries, and falls back to the original if that number is not where expected.
+  const windowHours = (d.window_note || "").match(/last (\d+(?:\.\d+)?)h/);
+  const noteEn = d.window_note
+    ? esc(d.window_note.charAt(0).toUpperCase() + d.window_note.slice(1)) + "." : "";
+  const note = (LANG === "en" || !windowHours)
+    ? noteEn
+    : t("spend.foot.window", noteEn).replace("{h}", windowHours[1]);
+  document.getElementById("foot").innerHTML = t("spend.foot",
+      "There is no total-spend number here on purpose: the accounts are denominated in USD, GBP and "
     + "credits, and two of them expose no balance at all — only trailing cost. The one quantity that "
-    + "is comparable across all of them is <b>runway</b>, so the table is sorted by it.<br>"
-    + (d.window_note ? d.window_note.charAt(0).toUpperCase() + d.window_note.slice(1) + "." : "")
-    + " Generated <code>" + d.generated + "</code>.";
+    + "is comparable across all of them is <b>runway</b>, so the table is sorted by it.")
+    + "<br>" + note
+    + " " + t("spend.foot.generated", "Generated") + " <code>" + esc(d.generated) + "</code>.";
 }
 
 async function load(){
@@ -238,9 +284,10 @@ async function load(){
       return;
     } catch (e) { /* try the next source */ }
   }
-  document.getElementById("sub").textContent =
-    "could not load data.json from any source — the collector may not have published yet";
+  document.getElementById("sub").textContent = t("spend.loadfail",
+    "could not load data.json from any source — the collector may not have published yet");
 }
+window.__rerender = () => { if (LAST) render(LAST); };
 load();
 setInterval(load, 30000);
 </script>

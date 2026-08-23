@@ -48,6 +48,13 @@ MUTANTS = [
     ("M12 shape history crosses stand worlds",
      '        "AND world_epoch IS ? AND fingerprint IS ?",\n        (provider, world.get("world_epoch"), world.get("fingerprint"))).fetchall()}',
      '        "",\n        (provider,)).fetchall()}'),
+    ("M13 a zero baseline falls back to the 15-minute burn",
+     "        rate = publishable_rate(self.conn, provider, world, median, bucket_count)",
+     "        rate = median if median else recent_burn"),
+    ("M14 the spend-report sustain clock is never reset",
+     '            self.anomaly_since.pop("spend:" + provider, None)\n'
+     '            self.alerter.clear("spend_spike:" + provider)',
+     '            self.alerter.clear("spend_spike:" + provider)'),
 ]
 
 

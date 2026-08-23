@@ -1,8 +1,18 @@
 # Spend observability across 15 provider accounts
 
-**Dashboard:** https://anastasiyaw.github.io/explee-spend-observability/ (public, no login)
-**Collector:** [`spend_monitor.py`](spend_monitor.py) — one file, stdlib only
-**Alerts:** [`alerts.jsonl`](alerts.jsonl) — one JSON line per alert
+Everything the brief asks for, and where it is:
+
+| asked for | here |
+|---|---|
+| the code, a file | [`spend_monitor.py`](spend_monitor.py) — one file, stdlib only |
+| `alerts.jsonl` | [`alerts.jsonl`](alerts.jsonl) in this repository, and the collector's live copy on the [`data` branch](https://raw.githubusercontent.com/AnastasiyaW/explee-spend-observability/data/alerts.jsonl), refreshed every five minutes |
+| a public dashboard, no login | <https://anastasiyaw.github.io/explee-spend-observability/> |
+| `TRACE.md` | [`TRACE-task1.redacted.md`](TRACE-task1.redacted.md) — the real session, verbatim; only our own host names and keys are replaced by substitution, nothing is cut or rewritten. Rendered to read as a page: [trace.html](https://anastasiyaw.github.io/explee-spend-observability/trace.html) |
+| run it ≥ 6 hours | one unbroken run over 15 providers — and checkable from outside, which the database is not: the published `alerts.jsonl` spans **09:26:48Z → 16:53:44Z (7.4 h)**, and the `data` branch carries one snapshot commit roughly every five minutes across the same window |
+
+Of the 79 alert lines published so far, 79 carry `ts`, `text` and `provider`, and
+every `ts` parses with an explicit offset — checked by parsing the file, not by
+reading it.
 
 The stand exposes one number per provider and no history. So the history is the
 product: every reading is stored, and burn rate, "normal", and time-to-empty are
@@ -153,7 +163,45 @@ invented a 47,943/h phantom burn; the snapshot was rewritten every second
 `alerts.jsonl` would have killed the run permanently.
 
 The previous self-test passed on three of five deliberately broken versions.
-The current one kills eight of eight.
+The current one kills fourteen of fourteen.
+
+### A second review, against this brief
+
+The whole thing was then read once more with the published brief open beside it,
+which found one gap and two defects the green suite could not see.
+
+**The gap: a required deliverable had no way off the box.** The brief asks for
+`alerts.jsonl`. It existed — 69 lines of it — but [`publish.sh`](publish.sh)
+copied only `data.json` to the `data` branch, so both links to it returned 404.
+An artefact nobody can fetch has not been delivered. Both the repository copy
+and the live branch copy now exist, and the publishing script is in the
+repository instead of living only on the host.
+
+**A baseline of zero is not the absence of a baseline.** `baseline_rate` returns
+the bucket count precisely so a caller can tell those apart, and both call sites
+tested the median for truthiness and threw the distinction away. The median is
+exactly `0.0` for an account that steps less often than a bucket is wide — and
+the fallback was the 15-minute burn, which is the duty-cycle error a third time
+and the worst instance of it yet: on a four-hourly stepper it reads 450/h
+against a true 12.5/h and publishes *"2.1h of runway left, top up now"* for an
+account 76 hours from empty. None of the fifteen live accounts steps that slowly
+today, so this had not fired — it was one quiet provider away. A zero median now
+falls back to the aggregate over the whole baseline window, which is still a
+rate and still counts the flat time.
+
+**A sustain clock that never resets.** `_balance` clears its anomaly timer when
+the burst ends; `_spend_report` did not. After one blip, the "sustained ≥ 10 min"
+requirement was permanently satisfied for `anthropic` and `meta_ads`: the next
+single sample would fire instantly and quote a duration measured from an
+unrelated event hours earlier.
+
+**The dashboard executed whatever the stand sent it.** Provider names, error
+text, fault kinds and the world fingerprint went into `innerHTML` unescaped, so
+`{"error":"<img src=x onerror=...>"}` would have run as script on the Pages
+origin. Every page escapes now. The check that proves it is not "I read the
+code": each page's own `render()` was run over a hostile payload and the HTML it
+produced was inspected — 14 sinks, and the first run of that probe found a
+fifteenth I had missed by eye.
 
 ## How it runs
 
@@ -162,8 +210,8 @@ a small VPS ──outbound only──> jobs.explee.com   (poll /meta + 15 balanc
      │
      ├─ SQLite: every sample, verbatim body kept as evidence
      ├─ alerts.jsonl
-     └─ every 5 min ──> git push ──> branch `data` ──> raw.githubusercontent
-                                                              │
+     └─ every 5 min ──> publish.sh ──> branch `data` ──> raw.githubusercontent
+            (data.json AND alerts.jsonl)                      │
                             GitHub Pages (docs/) ─────────────┘  dashboard fetches it
 ```
 
@@ -191,6 +239,17 @@ python3 spend_monitor.py run           # the monitor
 - **`raw.githubusercontent` caches for a few minutes.** The dashboard polls
   every 30s, but the underlying data is at most ~5 minutes old. For runway
   measured in hours that is well inside the noise.
+- **An account that steps slower than half an hour gets no burn anomaly.** Its
+  median bucket rate is zero, and comparing a 15-minute window against a zero
+  baseline would fire on every step it takes. Runway still works there — it uses
+  the window aggregate — but acceleration on such an account is invisible until
+  its baseline becomes positive. Naming the hole beats a detector that cries
+  wolf once per step.
+- **Nothing is deleted, so the database grows.** Every sample keeps the first
+  600 bytes of the body as evidence, which is roughly 50 MB a day at this poll
+  rate. Correct for a run measured in hours, wrong for a service left running;
+  retention is a decision about discarding evidence and has not been taken.
 - **The self-test proves the shapes I thought of.** It covers seven response
   layouts captured verbatim from the live stand and every detector, but a green
-  suite is evidence about imagined cases, not a closed class.
+  suite is evidence about imagined cases, not a closed class. That is not a
+  figure of speech: the suite was green when the review above started.

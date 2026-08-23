@@ -47,28 +47,34 @@
   .crit{color:var(--crit);font-weight:650} .warn{color:var(--warn);font-weight:600} .ok{color:var(--ok)}
   .muted{color:var(--muted)}
   footer{margin-top:28px;color:var(--muted);font-size:12.5px;line-height:1.65}
+  .langswitch{position:fixed;top:12px;right:14px;display:flex;gap:0;z-index:5;
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}
+  .langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
+    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}
+  .langswitch button[aria-current="true"]{background:var(--accent);color:#fff}
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <h1>How the stand behaves</h1>
+  <h1 data-i18n="stand.h1">How the stand behaves</h1>
   <p class="sub" id="sub">loading…</p>
-  <a class="back" href="spend.html">&larr; back to spend</a> &nbsp; <a class="back" href="./">all three tasks</a>
+  <a class="back" href="spend.html" data-i18n="stand.back">&larr; back to spend</a> &nbsp; <a class="back" href="./" data-i18n="stand.back.all">all three tasks</a>
 
   <div class="cards" id="cards"></div>
 
-  <h2>Failure taxonomy</h2>
+  <h2 data-i18n="stand.h2.faults">Failure taxonomy</h2>
   <div class="scroll">
     <table>
-      <thead><tr><th>What came back</th><th class="num">Times</th><th class="num">Providers hit</th><th>Share of all failures</th></tr></thead>
+      <thead><tr><th data-i18n="stand.th.what">What came back</th><th class="num" data-i18n="stand.th.times">Times</th><th class="num" data-i18n="stand.th.hit">Providers hit</th><th data-i18n="stand.th.share">Share of all failures</th></tr></thead>
       <tbody id="faults"></tbody>
     </table>
   </div>
 
-  <h2>Per account</h2>
+  <h2 data-i18n="stand.h2.per">Per account</h2>
   <div class="scroll">
     <table>
-      <thead><tr><th>Provider</th><th class="num">Reads</th><th class="num">Failed</th><th class="num">Failure rate</th><th></th></tr></thead>
+      <thead><tr><th data-i18n="stand.th.provider">Provider</th><th class="num" data-i18n="stand.th.reads">Reads</th><th class="num" data-i18n="stand.th.failed">Failed</th><th class="num" data-i18n="stand.th.rate">Failure rate</th><th></th></tr></thead>
       <tbody id="providers"></tbody>
     </table>
   </div>
@@ -83,32 +89,46 @@ const DATA_URLS = [
 ];
 const n = x => (x === null || x === undefined) ? "—" : Number(x).toLocaleString("en-US");
 
+// Fault kinds carry the provider's own error text, and provider names come
+// from the stand's catalog. Both are third-party strings headed for innerHTML.
+function esc(s){
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
 function rateClass(p){ return p >= 20 ? "crit" : p >= 5 ? "warn" : "ok"; }
 
+let LAST = null;
 function render(d){
+  LAST = d;
   const a = d.api || {};
   if (!a.reads){
-    document.getElementById("sub").textContent = "no reads recorded yet";
+    document.getElementById("sub").textContent =
+      t("stand.sub.noreads", "no reads recorded yet");
     return;
   }
-  document.getElementById("sub").innerHTML =
-    "Nothing here is documented by the provider. It is what " + n(a.reads) +
-    " of our own reads actually got back, over the last 24 hours.";
+  document.getElementById("sub").innerHTML = t("stand.sub",
+    "Nothing here is documented by the provider. It is what {n} of our own reads actually "
+    + "got back, over the last 24 hours.").replace("{n}", n(a.reads));
 
   const lat = a.latency_ms || {};
   document.getElementById("cards").innerHTML = [
-    ["Reads", n(a.reads), "one per provider per poll", "ok"],
-    ["Success rate", a.success_pct + "%", n(a.failed) + " failed", rateClass(100 - a.success_pct)],
-    ["Latency p50 / p95", n(lat.p50) + " / " + n(lat.p95) + " ms", "slowest " + n(lat.max) + " ms", "ok"],
-    ["Distinct fault kinds", String((a.faults || []).length),
-     "each needs different handling", (a.faults || []).length > 3 ? "warn" : "ok"]
+    [t("stand.card.reads", "Reads"), n(a.reads),
+     t("stand.card.reads.note", "one per provider per poll"), "ok"],
+    [t("stand.card.success", "Success rate"), a.success_pct + "%",
+     n(a.failed) + " " + t("stand.card.failed", "failed"), rateClass(100 - a.success_pct)],
+    [t("stand.card.latency", "Latency p50 / p95"), n(lat.p50) + " / " + n(lat.p95) + " ms",
+     t("stand.card.slowest", "slowest") + " " + n(lat.max) + " ms", "ok"],
+    [t("stand.card.kinds", "Distinct fault kinds"), String((a.faults || []).length),
+     t("stand.card.kinds.note", "each needs different handling"),
+     (a.faults || []).length > 3 ? "warn" : "ok"]
   ].map(c => '<div class="card"><div class="lbl">' + c[0] + '</div><div class="big ' + c[3]
     + '">' + c[1] + '</div><div class="note">' + c[2] + '</div></div>').join("");
 
   const total = a.failed || 1;
   document.getElementById("faults").innerHTML = (a.faults || []).map(f => {
     const share = 100 * f.count / total;
-    return '<tr><td><code>' + f.kind + '</code></td><td class="num">' + n(f.count)
+    return '<tr><td><code>' + esc(f.kind) + '</code></td><td class="num">' + n(f.count)
       + '</td><td class="num">' + n(f.providers) + '</td>'
       + '<td><div class="bar"><i style="width:' + share.toFixed(1) + '%"></i></div>'
       + '<span class="muted" style="font-size:12px">' + share.toFixed(1) + '%</span></td></tr>';
@@ -117,19 +137,19 @@ function render(d){
   const pp = a.per_provider || {};
   document.getElementById("providers").innerHTML = Object.keys(pp).map(name => {
     const r = pp[name];
-    return '<tr><td>' + name + '</td><td class="num">' + n(r.reads) + '</td><td class="num">'
+    return '<tr><td>' + esc(name) + '</td><td class="num">' + n(r.reads) + '</td><td class="num">'
       + n(r.failed) + '</td><td class="num ' + rateClass(r.failure_pct) + '">' + r.failure_pct
       + '%</td><td><div class="bar"><i style="width:' + Math.min(100, r.failure_pct * 3).toFixed(1)
       + '%"></i></div></td></tr>';
   }).join("");
 
-  document.getElementById("foot").innerHTML =
-    "The task never asked for this page — it asks for a dashboard that shows spend at a glance, and "
+  document.getElementById("foot").innerHTML = t("stand.foot",
+      "The task never asked for this page — it asks for a dashboard that shows spend at a glance, and "
     + "for the monitor to cope with a service that misbehaves. Coping is only believable if the "
     + "misbehaviour is measured, so it lives here instead of crowding the number that matters.<br>"
     + "Every read is stored with its status, error text, latency and the first 600 bytes of the body, "
-    + "so this table is a view over evidence rather than a counter someone incremented. "
-    + "Generated <code>" + d.generated + "</code>.";
+    + "so this table is a view over evidence rather than a counter someone incremented.")
+    + " " + t("spend.foot.generated", "Generated") + " <code>" + esc(d.generated) + "</code>.";
 }
 
 async function load(){
@@ -141,8 +161,10 @@ async function load(){
       return;
     }catch(e){}
   }
-  document.getElementById("sub").textContent = "could not load data.json from any source";
+  document.getElementById("sub").textContent =
+    t("stand.loadfail", "could not load data.json from any source");
 }
+window.__rerender = () => { if (LAST) render(LAST); };
 load();
 setInterval(load, 60000);
 </script>

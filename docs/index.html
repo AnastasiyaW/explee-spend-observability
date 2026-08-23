@@ -41,41 +41,47 @@
   footer{margin-top:34px;color:var(--muted);font-size:12.5px;line-height:1.7}
   footer a{color:var(--accent)}
   code{font:12px ui-monospace,"Cascadia Code",Consolas,monospace}
+  .langswitch{position:fixed;top:12px;right:14px;display:flex;gap:0;z-index:5;
+    border:1px solid var(--line);border-radius:20px;overflow:hidden;background:var(--panel)}
+  .langswitch button{border:0;background:transparent;color:var(--muted);cursor:pointer;
+    font:600 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;padding:6px 10px}
+  .langswitch button[aria-current="true"]{background:var(--accent);color:#fff}
 </style>
+<script src="i18n.js"></script>
 </head>
 <body>
 <div class="wrap">
-  <h1>Explee test task</h1>
-  <p class="lede">Three pieces of work. Each one is live rather than described:
-     the spend monitor has been running continuously since it was deployed, and
-     every number below is read from it as this page loads.</p>
+  <h1 data-i18n="index.title">Explee test task</h1>
+  <p class="lede" data-i18n="index.lede">Three pieces of work. The spend monitor has been running continuously since it
+     was deployed, and the two counters below it are read from it as this page loads.
+     The other lines are written status, not live reads.</p>
 
   <a class="card" href="spend.html">
-    <div class="row"><span class="tag">Task 1</span><h2>Spend observability</h2></div>
-    <p>Fifteen provider accounts, one number each and no history endpoint — so the
+    <div class="row"><span class="tag" data-i18n="index.t1.tag">Task 1</span><h2 data-i18n="index.t1.h">Spend observability</h2></div>
+    <p data-i18n="index.t1.p">Fifteen provider accounts, one number each and no history endpoint — so the
        history is built by the monitor itself. Sorted by runway, because hours are
        the only unit that compares dollars, pounds and credits.</p>
     <div class="live" id="live-spend">loading…</div>
-    <span class="go">Open the dashboard →</span>
+    <span class="go" data-i18n="index.t1.go">Open the dashboard →</span>
   </a>
 
   <a class="card" href="stand.html">
-    <div class="row"><span class="tag">Task 1 · evidence</span><h2>How the stand behaves</h2></div>
-    <p>The API misbehaves on purpose. Coping with that is only believable if the
+    <div class="row"><span class="tag" data-i18n="index.t2.tag">Task 1 · evidence</span><h2 data-i18n="index.t2.h">How the stand behaves</h2></div>
+    <p data-i18n="index.t2.p">The API misbehaves on purpose. Coping with that is only believable if the
        misbehaviour is measured, so the failure taxonomy lives on its own page
        instead of crowding the number that matters.</p>
     <div class="live" id="live-stand">loading…</div>
-    <span class="go">Open the measurements →</span>
+    <span class="go" data-i18n="index.t2.go">Open the measurements →</span>
   </a>
 
   <a class="card" href="stt.html" id="stt-card">
-    <div class="row"><span class="tag">Task 2 · STT evidence</span><h2>Picking a transcriber</h2></div>
-    <p>Eight model variants across six independent STT families, on one hour of
+    <div class="row"><span class="tag" data-i18n="index.t3.tag">Task 2 · STT evidence</span><h2 data-i18n="index.t3.h">Picking a transcriber</h2></div>
+    <p data-i18n="index.t3.p">Eight model variants across six independent STT families, on one hour of
        Russian speech with dense English IT terms.
        The metric is the deliverable: word error rate is the wrong primary score
        for this audio, and the report explains why with numbers.</p>
     <div class="live" id="live-stt"><span style="color:var(--ok)">●</span> 32 / 32 provenance-validated runs complete · human quality adjudication next</div>
-    <span class="go">Open the comparison →</span>
+    <span class="go" data-i18n="index.t3.go">Open the comparison →</span>
   </a>
 
   <a class="card" href="stt-evidence.html">
@@ -84,8 +90,18 @@
     <span class="go">Open the full-hour evidence →</span>
   </a>
 
+  <a class="card" href="trace.html">
+    <div class="row"><span class="tag" data-i18n="index.trace.tag">How it was made</span>
+      <h2 data-i18n="index.trace.h">The agent trace</h2></div>
+    <p data-i18n="index.trace.p">The whole session, verbatim: the mistakes, the dead ends and the
+       corrections. The corrections are the part that shows how a person drives an agent, so
+       nothing is cut.</p>
+    <div class="live" id="live-trace"></div>
+    <span class="go" data-i18n="index.trace.go">Open the trace →</span>
+  </a>
+
   <footer id="foot">
-    Code and full write-ups:
+    <span data-i18n="index.foot">Code and full write-ups:</span>
     <a href="https://github.com/AnastasiyaW/explee-spend-observability">github.com/AnastasiyaW/explee-spend-observability</a>
   </footer>
 </div>
@@ -98,9 +114,15 @@ const DATA_URLS = [
 const n = x => (x === null || x === undefined) ? "—" : Number(x).toLocaleString("en-US");
 function hours(h){
   if (h === null || h === undefined) return "—";
-  if (h < 1) return Math.round(h * 60) + " min";
-  if (h < 48) return h.toFixed(1) + " h";
-  return (h / 24).toFixed(1) + " d";
+  if (h < 1) return Math.round(h * 60) + " " + t("unit.min", "min");
+  if (h < 48) return h.toFixed(1) + " " + t("unit.h", "h");
+  return (h / 24).toFixed(1) + " " + t("unit.d", "d");
+}
+
+// The provider name reaches this page from the stand's catalog.
+function esc(s){
+  return String(s === null || s === undefined ? "" : s)
+    .replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
 
 async function load(){
@@ -114,7 +136,8 @@ async function load(){
     }catch(e){}
   }
   if (!d){
-    document.getElementById("live-spend").textContent = "collector unreachable right now";
+    document.getElementById("live-spend").textContent =
+      t("index.live.unreachable", "collector unreachable right now");
     document.getElementById("live-stand").textContent = "";
     return;
   }
@@ -125,18 +148,22 @@ async function load(){
   const dot = stale < 600 ? "var(--ok)" : "var(--crit)";
 
   document.getElementById("live-spend").innerHTML =
-    '<span style="color:' + dot + '">●</span> <b>' + ps.length + '</b> accounts watched · '
-    + (soonest ? 'soonest to run dry <b>' + hours(soonest.runway_h) + '</b> (' + soonest.provider + ')'
-               : 'measuring burn rates')
-    + ' · <b>' + (d.alerts || []).length + '</b> alerts on file';
+    '<span style="color:' + dot + '">●</span> <b>' + ps.length + '</b> '
+    + t("index.live.accounts", "accounts watched") + ' · '
+    + (soonest ? t("index.live.soonest", "soonest to run dry") + ' <b>' + hours(soonest.runway_h)
+                 + '</b> (' + esc(soonest.provider) + ')'
+               : t("index.live.measuring", "measuring burn rates"))
+    + ' · <b>' + (d.alerts || []).length + '</b> ' + t("index.live.alerts", "alerts on file");
 
   const a = d.api || {};
   document.getElementById("live-stand").innerHTML = a.reads
-    ? '<b>' + a.success_pct + '%</b> of <b>' + n(a.reads) + '</b> reads succeeded · '
-      + '<b>' + (a.faults || []).length + '</b> distinct fault kinds · '
-      + 'p95 latency <b>' + n((a.latency_ms||{}).p95) + ' ms</b>'
-    : "no reads recorded yet";
+    ? '<b>' + a.success_pct + '%</b> ' + t("index.live.reads_ok", "of") + ' <b>' + n(a.reads)
+      + '</b> ' + t("index.live.reads_succeeded", "reads succeeded") + ' · '
+      + '<b>' + (a.faults || []).length + '</b> ' + t("index.live.faultkinds", "distinct fault kinds")
+      + ' · ' + t("index.live.p95", "p95 latency") + ' <b>' + n((a.latency_ms||{}).p95) + ' ms</b>'
+    : t("index.live.noreads", "no reads recorded yet");
 }
+window.__rerender = load;
 load();
 setInterval(load, 30000);
 
