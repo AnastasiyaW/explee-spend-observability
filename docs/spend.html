@@ -23,6 +23,12 @@
   .empty{padding:24px 14px;color:var(--muted);font-size:13px;text-align:center;max-width:70ch;margin:0 auto}
   svg.spark{display:block}
   #alertnote{margin:-2px 0 8px}
+  .alertmore{display:flex;gap:10px;align-items:center;margin:9px 0 0}
+  .alertmore button{font:600 11px/1 var(--f-sans);letter-spacing:.05em;text-transform:uppercase;
+    border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;
+    border-radius:20px;padding:7px 13px}
+  .alertmore button:hover{border-color:var(--accent);color:var(--accent)}
+  .alertmore .count{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
   /* The way through to the evidence page. One filled control on the page, and
      it is small: the numbers above it stay the loudest thing here. */
   #standlink{margin:18px 0 0;font-size:13px;line-height:2.2}
@@ -62,6 +68,7 @@
   <h2 class="sectionhead" data-i18n="spend.h2.alerts">Alerts</h2>
   <p class="sub" id="alertnote"></p>
   <div class="panel alerts" id="alerts"></div>
+  <div class="alertmore" id="alertmore"></div>
 
   <footer id="foot"></footer>
 </div>
@@ -117,6 +124,72 @@ function ago(iso){
 }
 
 let LAST = null;
+
+// The snapshot carries the most recent sixty lines. The rest of the log is on
+// the branch the collector publishes to, fetched only if someone asks for it -
+// there is deliberately no copy of alerts.jsonl in docs/, because a committed
+// copy is wrong within five minutes of being committed.
+const ALERTS_RAW =
+  "https://raw.githubusercontent.com/AnastasiyaW/explee-spend-observability/data/alerts.jsonl";
+const PAGE = 60;
+let ALERTS = [], SHOWN = PAGE, FULL = false, LOADING = false;
+
+function renderAlerts(){
+  const box = document.getElementById("alerts");
+  if (!ALERTS.length){
+    box.innerHTML = '<div class="empty">' + t("spend.alerts.empty",
+      "No alerts yet. The collector suppresses anomaly alerts until it has enough of its own "
+      + "history to know what normal is.") + '</div>';
+    document.getElementById("alertmore").innerHTML = "";
+    return;
+  }
+  box.innerHTML = ALERTS.slice(0, SHOWN).map(a =>
+    '<div class="alert"><time>' + esc(a.ts || "") + '</time>'
+    + '<span class="' + (a.level === "critical" ? "crit" : a.level === "warn" ? "warn" : "muted") + '">'
+    + (a.level === "critical" ? "●" : a.level === "warn" ? "▲" : "·") + '</span>'
+    + '<span>' + esc(a.text || "") + '</span></div>').join("");
+
+  const more = document.getElementById("alertmore");
+  const remaining = ALERTS.length - SHOWN;
+  if (!FULL || remaining > 0){
+    more.innerHTML = '<button type="button" id="alertmorebtn">'
+      + (LOADING ? t("spend.alerts.loading", "loading\u2026")
+         : t("spend.alerts.more", "Show 60 more"))
+      + '</button><span class="count">' + Math.min(SHOWN, ALERTS.length) + " / "
+      + (FULL ? ALERTS.length : t("spend.alerts.ofall", "the whole log")) + '</span>';
+    document.getElementById("alertmorebtn").addEventListener("click", showMoreAlerts);
+  } else {
+    more.innerHTML = '<span class="count">' + ALERTS.length + " "
+      + t("spend.alerts.allshown", "lines, the whole log") + '</span>';
+  }
+}
+
+async function showMoreAlerts(){
+  if (LOADING) return;
+  if (!FULL){
+    // First press: pull the whole file, once.
+    LOADING = true; renderAlerts();
+    try {
+      const res = await fetch(ALERTS_RAW + "?t=" + Date.now(), {cache: "no-store"});
+      if (!res.ok) throw new Error(String(res.status));
+      const lines = (await res.text()).split("\n").filter(l => l.trim());
+      const parsed = [];
+      for (const line of lines){
+        try { parsed.push(JSON.parse(line)); } catch (e) { /* a torn line is not a reason to fail */ }
+      }
+      if (parsed.length) { ALERTS = parsed.reverse(); FULL = true; }
+    } catch (e) {
+      document.getElementById("alertmore").innerHTML = '<span class="count">'
+        + t("spend.alerts.morefail", "could not read the full log") + '</span>';
+      LOADING = false;
+      return;
+    }
+    LOADING = false;
+  }
+  SHOWN += PAGE;
+  renderAlerts();
+}
+
 function render(d){
   LAST = d;
   const ps = d.providers || [];
@@ -195,14 +268,8 @@ function render(d){
       + '</tr>';
   }).join("");
 
-  document.getElementById("alerts").innerHTML = alerts.length ? alerts.map(a =>
-    '<div class="alert"><time>' + esc(a.ts || "") + '</time>'
-    + '<span class="' + (a.level === "critical" ? "crit" : a.level === "warn" ? "warn" : "muted") + '">'
-    + (a.level === "critical" ? "●" : a.level === "warn" ? "▲" : "·") + '</span>'
-    + '<span>' + esc(a.text || "") + '</span></div>').join("")
-    : '<div class="empty">' + t("spend.alerts.empty",
-        "No alerts yet. The collector suppresses anomaly alerts until it has enough of its own "
-        + "history to know what normal is.") + '</div>';
+  ALERTS = alerts;
+  renderAlerts();
   document.getElementById("alertnote").innerHTML = (alerts.length && LANG !== "en")
     ? t("spend.alerts.verbatim", "") : "";
 

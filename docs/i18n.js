@@ -85,6 +85,11 @@ const I18N = {
     "spend.h2.alerts": "Алерты",
     "spend.alerts.empty": "Алертов пока нет. Монитор молчит про аномалии до тех пор, пока не наберёт " +
                           "собственную историю и не узнает, что здесь считается нормой.",
+    "spend.alerts.more": "Показать ещё 60",
+    "spend.alerts.loading": "загружаю…",
+    "spend.alerts.ofall": "весь журнал",
+    "spend.alerts.allshown": "строк — весь журнал",
+    "spend.alerts.morefail": "не удалось прочитать полный журнал",
     "spend.alerts.verbatim": "Тексты алертов показаны дословно из alerts.jsonl и поэтому остаются английскими.",
     "spend.nobalance": "баланса нет · расход за 24 ч",
     "spend.warming": "прогрев",
