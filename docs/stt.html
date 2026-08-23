@@ -48,6 +48,7 @@
     <h2>Measured GPU throughput</h2>
     <section class="panel table-wrap" aria-label="Measured throughput for completed GPU variants">
       <table class="results">
+        <caption class="sr-only">Measured GPU throughput for completed speech-to-text variants</caption>
         <thead><tr><th>Variant</th><th>Family</th><th>Device</th><th>Same audio</th><th>Inference time</th><th>Speed</th><th>State</th></tr></thead>
         <tbody>
           <tr><td>faster-whisper small</td><td>Whisper / CTranslate2</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">99.1 s</td><td class="num"><b>36.3×</b> real-time</td><td>complete</td></tr>
@@ -79,7 +80,7 @@
     <section class="candidates" aria-label="Model inclusion rationale">
       <article class="candidate"><small>Whisper baseline</small><h3>faster-whisper small</h3><p>Low-cost local baseline: it establishes what the larger Whisper variants actually buy.</p></article>
       <article class="candidate"><small>Whisper frontier</small><h3>faster-whisper large-v3-turbo</h3><p>Tests the likely speed/accuracy frontier against domain spellings instead of assuming “turbo” is free.</p></article>
-      <article class="candidate"><small>Whisper ceiling</small><h3>faster-whisper large-v3</h3><p>Maximum-accuracy Whisper baseline for code-switched terms.</p></article>
+      <article class="candidate"><small>Whisper ceiling</small><h3>faster-whisper large-v3</h3><p>Largest Whisper baseline for code-switched terms.</p></article>
       <article class="candidate"><small>Russian-native</small><h3>GigaAM v3 e2e RNNT</h3><p>Official Russian end-to-end RNN-T path, pinned by source commit and checkpoint hash.</p></article>
       <article class="candidate"><small>Independent CTC</small><h3>Meta MMS-1B Russian adapter</h3><p>Separates broad Russian coverage from the ability to retain English IT terminology.</p></article>
       <article class="candidate"><small>LLM-style ASR</small><h3>Qwen3-ASR 0.6B</h3><p>Candidate designed to recognise product and vendor names inside Russian/English code-switching.</p></article>
