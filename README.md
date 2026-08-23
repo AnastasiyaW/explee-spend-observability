@@ -310,15 +310,6 @@ caught: the map was built from Latin spellings, so the hosting vendor's name
 went out **eight times in Cyrillic**, inside Russian sentences, in a file whose
 header said it was redacted. Both alphabets are in the gate now.
 
-**Typos are not corrected in the record.** The brief is explicit that a
-hand-made trace tells them nothing, and fast unedited typing is part of what it
-shows. The page therefore opens on the verbatim text and offers a
-spelling-corrected reading as a switch, built from
-[`trace-corrections.json`](trace-corrections.json) — explicit find/replace pairs,
-so which characters changed is auditable rather than buried in a rewritten file.
-Each pair must match its message exactly once or the render fails. One of them
-is interpretation rather than spelling, and that one is named in the file.
-
 ## How it runs
 
 ```
