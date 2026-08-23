@@ -1,0 +1,16 @@
+# Accepted strings for ~/.claude/scripts/submission_scan.py --allow
+#
+# Every line is an exception with a reason. An exception without a reason is
+# how a gate stops being a gate.
+
+# The scanner derives private terms from ~/.ssh/config, where "vast" is one of
+# our host aliases. Here the match is inside "vastai" - a provider id from
+# Explee's own catalog, which their grader reads back. Not our host.
+vast
+vastai
+
+# The GitHub account that owns this public repository. It is the address of the
+# deliverable itself: the dashboard fetches its data from this URL and the
+# submission hands over the same link. Public by intent, not by accident.
+anastasi
+anastasiyaw
