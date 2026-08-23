@@ -5,82 +5,239 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="A transparent STT comparison for Russian meetings with dense English IT terminology.">
   <title>Picking a transcriber · Explee test task</title>
+  <link rel="stylesheet" href="site.css">
   <style>
-    :root{
-      --bg:#fbfbfa;--panel:#fff;--ink:#16150f;--muted:#6b6a60;--line:#e3e2dc;
-      --accent:#2b5cd9;--accent-soft:#edf2ff;--ok:#1a7f4b;--ok-soft:#e8f6ed;
-      --warn:#a86a00;--warn-soft:#fff5df;--radius:12px;
-    }
-    @media (prefers-color-scheme:dark){
-      :root:not([data-theme="light"]){
-        --bg:#14140f;--panel:#1c1c17;--ink:#f0efe8;--muted:#9d9c91;--line:#2e2e27;
-        --accent:#7ea2ff;--accent-soft:#202d4b;--ok:#4ec27f;--ok-soft:#173c27;
-        --warn:#e0a33a;--warn-soft:#493713;
-      }
-    }
-    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-    a{color:var(--accent)}a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}.wrap{max-width:1080px;margin:0 auto;padding:36px 20px 76px}.back{font-size:13px;text-decoration:none}.eyebrow{display:inline-flex;align-items:center;gap:8px;margin-top:28px;padding:4px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.dot{width:8px;height:8px;border-radius:50%;background:var(--warn);box-shadow:0 0 0 4px var(--warn-soft)}
-    h1{max-width:850px;margin:13px 0 12px;font-size:clamp(2.1rem,5vw,4rem);line-height:1.03;letter-spacing:-.055em}.lede{max-width:720px;margin:0;color:var(--muted);font-size:clamp(1rem,2vw,1.16rem)}.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:30px 0}.fact,.panel,.candidate{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}.fact{padding:17px}.fact b{display:block;font-size:clamp(1.45rem,3vw,2rem);line-height:1.15;letter-spacing:-.04em}.fact span{display:block;margin-top:5px;color:var(--muted);font-size:12px}
-    h2{margin:42px 0 11px;font-size:23px;letter-spacing:-.025em}h3{margin:0 0 5px;font-size:15px;letter-spacing:-.01em}.status{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:22px;align-items:center;padding:20px 22px;background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}.status h2{margin:0;font-size:20px}.status p{max-width:690px;margin:5px 0 0;color:var(--muted)}.status .count{font-variant-numeric:tabular-nums;font-size:28px;font-weight:760;color:var(--ok);letter-spacing:-.05em;white-space:nowrap}.note{padding:20px 22px}.note p{margin:0;max-width:800px}.note strong{color:var(--accent)}.table-wrap{overflow:auto}.results{width:100%;border-collapse:collapse;min-width:810px}.results th,.results td{padding:13px 14px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}.results th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.results tr:last-child td{border-bottom:0}.results td.num{font-variant-numeric:tabular-nums;white-space:nowrap}.pill{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:11px;font-weight:700;white-space:nowrap}.pending{color:var(--warn);font-weight:700}.method{max-width:820px}.method ol{margin:0;padding-left:22px}.method li{margin:9px 0}.candidates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.candidate{padding:17px}.candidate p{margin:0;color:var(--muted);font-size:13px}.candidate small{display:block;margin-bottom:8px;color:var(--accent);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.07em}.footer{margin-top:36px;color:var(--muted);font-size:12px}.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-    @media (max-width:760px){.wrap{padding:26px 16px 56px}.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.status{grid-template-columns:1fr;gap:8px}.candidates{grid-template-columns:1fr}h2{margin-top:32px}}@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+    /* Page-specific only. The tokens, type scale, panels, tables, .tag, .btn,
+       the footer and the fixed EN/RU switch all come from site.css now; what is
+       left here is what no other page has: the live-experiment eyebrow, the
+       call-out notes, the numbered method and the inclusion-rationale cards. */
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;margin:0 0 10px;padding:3px 10px;
+      border:1px solid var(--line);border-radius:var(--r-pill);color:var(--muted);
+      font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+    .dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+    /* The route to the evidence, as a control rather than a sentence: it is the
+       thing a reader of a comparison summary most often wants next. */
+    .cta{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;margin:16px 0 0}
+    .cta p{margin:0;max-width:70ch;color:var(--muted);font-size:12.5px;line-height:1.6}
+    .note{padding:13px 15px;margin:10px 0 0}
+    .note p{margin:0;max-width:88ch;font-size:13.5px;color:var(--muted)}
+    .note strong{color:var(--ink)}
+    .note.flag{border-left:3px solid var(--warn)}
+    .method{max-width:84ch}
+    .method ol{margin:0;padding-left:20px;font-size:13.5px;color:var(--muted)}
+    .method li{margin:7px 0}
+    .method li b{color:var(--ink);font-weight:600}
+    .candidate .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;
+      color:var(--muted);font-weight:600}
+    .candidate h3{margin:3px 0 4px;font-size:13.5px}
+    .candidate p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.5}
+    table.results{font-size:13px}
+    table.results td.state{color:var(--ok);font-weight:600}
+    /* The answer, largest thing on the page. Matches the evidence viewer so the
+       two pages read as one argument. */
+    .verdict{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ok);
+      border-radius:var(--r);padding:16px 18px;margin:0 0 12px}
+    .vlabel{margin:0;font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--ok);font-weight:700}
+    .vname{margin:2px 0 0;font-size:clamp(21px,3.4vw,30px);font-weight:650;letter-spacing:-.02em;line-height:1.15}
+    .vname .vid{font-family:var(--f-mono);font-size:13px;font-weight:400;color:var(--muted);letter-spacing:0}
+    .vwhy{margin:7px 0 0;font-size:14px;color:var(--muted)}
+    .vwhy b{color:var(--ink);font-variant-numeric:tabular-nums}
+    .vwhy .sep{margin:0 8px;color:var(--line)}
+    .vrule,.vcaveat{margin:6px 0 0;font-size:12.5px;color:var(--muted);max-width:88ch;line-height:1.6}
+    .vcaveat{padding-top:7px;border-top:1px solid var(--line)}
+    .rank{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+      border-radius:50%;font-size:10px;font-weight:700;border:1px solid var(--line);color:var(--muted)}
+    .rank.r1{background:var(--ok);border-color:var(--ok);color:var(--on-accent)}
+    .rank.r2{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+    .rank.r3{background:var(--accent-weak);border-color:var(--accent-weak);color:var(--ink)}
+    .win{display:inline-block;padding:0 6px;border-radius:var(--r-pill);background:var(--ok);
+      color:var(--on-accent);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    .ref{display:inline-block;padding:0 6px;border-radius:var(--r-pill);border:1px solid var(--line);
+      color:var(--muted);font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+    tbody tr.winner td{background:color-mix(in srgb,var(--ok) 8%,transparent)}
+    .candidate.winner{border-color:var(--ok)}
+    /* site.css has no visually-hidden helper, and this page needs one for the
+       skip link and the table caption. */
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .sr-only:focus{position:static;width:auto;height:auto;clip:auto;margin:0;padding:6px 10px;background:var(--panel);border:1px solid var(--line)}
+    @media (max-width:760px){.cta{gap:10px}}
   </style>
+  <script src="i18n.js"></script>
 </head>
 <body>
-  <a class="sr-only" href="#main">Skip to the report</a>
+  <a class="sr-only" href="#main" data-i18n="stt.skip">Skip to the report</a>
   <main class="wrap" id="main">
-    <a class="back" href="./">← all three tasks</a>
-    <div class="eyebrow"><span class="dot" aria-hidden="true"></span>Task 2 · live experiment</div>
-    <h1>Picking a transcriber for Russian meetings that speak IT.</h1>
-    <p class="lede">The test is not a generic speech-recognition leaderboard. Every candidate receives the same frozen hour of Russian speech with dense English product, vendor and engineering terms.</p>
+    <header class="pagehead">
+      <div class="backrow"><a class="back" href="./" data-i18n="stt.back">← all three tasks</a></div>
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span><span data-i18n="stt.eyebrow">Task 2 · live experiment</span></p>
+      <h1 data-i18n="stt.h1">Picking a transcriber for Russian meetings that speak IT.</h1>
+      <p class="sub" data-i18n="stt.lede">The test is not a generic speech-recognition leaderboard. Every candidate receives the same frozen hour of Russian speech with dense English product, vendor and engineering terms.</p>
+      <div class="cta">
+        <a class="btn" href="stt-evidence.html" data-i18n="stt.cta">Open the comparison viewer →</a>
+        <p data-i18n="stt.cta.note">Eight engines side by side: a sortable table of every measured metric, the four exact 15-minute source windows, complete transcripts for all eight variants, and a synchronized 144 blocks × 8 models text matrix.</p>
+      </div>
+    </header>
 
-    <p class="lede" style="margin-top:24px">Eight variants from six independent STT families processed the same 60 minutes in fixed 25-second, zero-overlap windows. Collection is complete: all seven GPU variants passed their admission canary, the CPU-only Vosk baseline completed, and 32 of 32 transcript artifacts were admitted. Human adjudication remains the quality gate.</p>
+    <section class="verdict">
+      <p class="vlabel" data-i18n="stt.v.label">Use this one</p>
+      <p class="vname">faster-whisper large-v3-turbo <span class="vid">fw-large-v3-turbo-cuda</span></p>
+      <p class="vwhy"><span data-i18n="stt.v.terms">Terms in the correct script:</span> <b>152 / 152</b><span class="sep">·</span><span data-i18n="stt.v.speed">the hour of audio in</span> <b>71.516 s</b> <span data-i18n="stt.v.on">on</span> NVIDIA GeForce RTX 4090</p>
+      <p class="vrule"><span data-i18n="stt.v.rule">Ranked by agreement with the confirmed reference; measured inference time breaks a tie among the correct, and never rescues an engine that lost on terms. Next best: faster-whisper large-v3 — 74 / 152 terms, in 178.688 s.</span></p>
+      <p class="vcaveat"><span data-i18n="stt.v.tautology">Read that first number carefully: the reference transcript <em>is</em> this engine's output, confirmed correct on the terms by the operator. Its 152 / 152 is arithmetic, not evidence about it. What the ranking measures is how far each other engine falls short of a transcript a human has confirmed — and none of them reaches half of it. A term the reference itself got wrong produces no slot and stays invisible to the method.</span></p>
+    </section>
 
-    <h2>Measured GPU throughput</h2>
-    <section class="panel table-wrap" aria-label="Measured throughput for completed GPU variants">
+    <p class="sub" data-i18n="stt.summary">Eight variants from six independent STT families processed the same 60 minutes in fixed 25-second, zero-overlap windows. All seven GPU variants passed their admission canary, the CPU-only Vosk baseline completed, and 32 of 32 transcript artifacts were admitted. The operator then confirmed one transcript as correct on the terms, which turned it into the reference for 152 time-bounded term slots; every variant is scored against those.</p>
+
+    <h2 class="sectionhead" data-i18n="stt.h2.throughput">Measured GPU throughput</h2>
+    <section class="panel scroll" aria-label="Measured throughput for completed GPU variants">
       <table class="results">
-        <caption class="sr-only">Measured GPU throughput for completed speech-to-text variants</caption>
-        <thead><tr><th>Variant</th><th>Family</th><th>Device</th><th>Same audio</th><th>Inference time</th><th>Speed</th><th>State</th></tr></thead>
+        <caption class="sr-only" data-i18n="stt.table.caption">Measured GPU throughput for completed speech-to-text variants</caption>
+        <thead><tr><th class="num" data-i18n="stt.th.rank">#</th><th data-i18n="stt.th.variant">Variant</th><th class="num" data-i18n="stt.th.terms">Terms in correct script</th><th data-i18n="stt.th.family">Family</th><th data-i18n="stt.th.device">Device</th><th class="num" data-i18n="stt.th.audio">Same audio</th><th class="num" data-i18n="stt.th.time">Inference time</th><th class="num" data-i18n="stt.th.speed">Speed</th><th data-i18n="stt.th.state">State</th></tr></thead>
         <tbody>
-          <tr><td>faster-whisper small</td><td>Whisper / CTranslate2</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">99.1 s</td><td class="num"><b>36.3×</b> real-time</td><td>complete</td></tr>
-          <tr><td>faster-whisper large-v3-turbo</td><td>Whisper / CTranslate2</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">71.5 s</td><td class="num"><b>50.3×</b> real-time</td><td>complete</td></tr>
-          <tr><td>faster-whisper large-v3</td><td>Whisper / CTranslate2</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">178.7 s</td><td class="num"><b>20.2×</b> real-time</td><td>complete</td></tr>
-          <tr><td>GigaAM v3 e2e RNNT</td><td>GigaAM</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">85.3 s</td><td class="num"><b>42.2×</b> real-time</td><td>complete</td></tr>
-          <tr><td>Meta MMS-1B Russian</td><td>MMS / CTC</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">19.1 s</td><td class="num"><b>188.2×</b> real-time</td><td>complete</td></tr>
-          <tr><td>Qwen3-ASR 0.6B</td><td>Qwen</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">697.9 s</td><td class="num"><b>5.2×</b> real-time</td><td>complete</td></tr>
-          <tr><td>MOSS Transcribe Diarize 0.9B</td><td>MOSS</td><td><span class="pill">RTX 4090</span></td><td class="num">60 min</td><td class="num">1,343.3 s</td><td class="num"><b>2.7×</b> real-time</td><td>complete</td></tr>
-          <tr><td>Vosk Russian 0.42</td><td>Vosk / Kaldi</td><td><span class="pill">CPU only</span></td><td class="num">60 min</td><td class="num">709.7 s</td><td class="num"><b>5.1×</b> real-time</td><td>complete</td></tr>
+          <tr class="winner"><td class="num"><span class="rank r1">1</span></td><td>faster-whisper large-v3-turbo <span class="win" data-i18n="stt.pick">pick</span> <span class="ref" data-i18n="stt.ref">reference</span></td><td class="num"><b>152 / 152</b></td><td>Whisper / CTranslate2</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">71.5 s</td><td class="num"><b>50.3×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r2">2</span></td><td>faster-whisper large-v3</td><td class="num"><b>74 / 152</b></td><td>Whisper / CTranslate2</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">178.7 s</td><td class="num"><b>20.2×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r3">3</span></td><td>MOSS Transcribe Diarize 0.9B</td><td class="num"><b>63 / 152</b></td><td>MOSS</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">1,343.3 s</td><td class="num"><b>2.7×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r4">4</span></td><td>faster-whisper small</td><td class="num"><b>48 / 152</b></td><td>Whisper / CTranslate2</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">99.1 s</td><td class="num"><b>36.3×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r4">5</span></td><td>Qwen3-ASR 0.6B</td><td class="num"><b>22 / 152</b></td><td>Qwen</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">697.9 s</td><td class="num"><b>5.2×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r4">6</span></td><td>GigaAM v3 e2e RNNT</td><td class="num"><b>17 / 152</b></td><td>GigaAM</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">85.3 s</td><td class="num"><b>42.2×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r4">7</span></td><td>Meta MMS-1B Russian</td><td class="num"><b>1 / 152</b></td><td>MMS / CTC</td><td><span class="tag">RTX 4090</span></td><td class="num">60 min</td><td class="num">19.1 s</td><td class="num"><b>188.2×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
+          <tr><td class="num"><span class="rank r4">8</span></td><td>Vosk Russian 0.42</td><td class="num"><b>0 / 152</b></td><td>Vosk / Kaldi</td><td><span class="tag">CPU only</span></td><td class="num">60 min</td><td class="num">709.7 s</td><td class="num"><b>5.1×</b> real-time</td><td class="state" data-i18n="stt.state.complete">complete</td></tr>
         </tbody>
       </table>
     </section>
 
-    <section class="panel note"><p><strong>No quality winner is declared yet.</strong> Speed proves that a model can finish quickly; it does not prove that it preserved <em>ClickHouse</em>, <em>RAG</em> or a vendor name. The ranking will appear only after a human has confirmed the same time-bounded term slots for every variant.</p></section>
+    <section class="panel note flag"><p><strong data-i18n="stt.tb.h">Why speed is only the tie-break.</strong> <span data-i18n="stt.tb.p">Meta MMS-1B is the fastest thing measured here — 19.1 s for the hour, 188.2× real time — and it recovers <b>1 of 152</b> confirmed terms. Ranking by speed would hand it the job. Speed proves that a model can finish; it does not prove that it preserved <em>ClickHouse</em>, <em>RAG</em> or a vendor name.</span></p></section>
 
-    <section class="panel note"><p><strong>Review the actual evidence.</strong> The <a href="stt-evidence.html">full-hour comparison viewer</a> contains the four exact 15-minute source windows, complete transcripts for all eight variants, and a synchronized 144 blocks × 8 models text matrix.</p></section>
+    <section class="panel note"><p><strong data-i18n="stt.hy.h">The guess going in was wrong, and the numbers are how we know.</strong> <span data-i18n="stt.hy.p">Before scoring, the expectation was that the pick would be MOSS or Vosk. MOSS agrees on <b>63 / 152</b> terms and needs <b>1,343.3 s</b> where the winner needs <b>71.5 s</b>; Vosk agrees on <b>0 / 152</b>. Vosk's zero is not a broken run — it produced 49,602 characters of Russian across the hour and <b>not one Latin-script token in any of it</b>, transliterating every term instead (<em>LSP</em> → «ласпи», <em>JetBrains</em> → «джек брэндс»). That is exactly the failure this evaluation was built to catch, and it is why the metric is term recall in the right script rather than WER.</span></p></section>
 
+    <h2 class="sectionhead" data-i18n="stt.h2.method">What “better” means here</h2>
     <section class="method">
-      <h2>What “better” means here</h2>
       <ol>
-        <li>Four frozen 15-minute technical segments have the same SHA-256 source authority for every run.</li>
-        <li>Every transcript must cover the complete duration using the same 25-second, zero-overlap chunk plan; model or device substitutions are rejected.</li>
-        <li>Systems may propose candidate terms, but cannot grade themselves. A human listens to bounded intervals and creates the reference authority.</li>
-        <li>The primary score is exact Latin-script recall of the confirmed IT terms. Cyrillic transliteration, a plausible wrong Latin spelling and an omission remain distinct errors.</li>
-        <li>Runtime is a tie-break only. A fast model cannot win by turning the important word into a plausible but wrong one.</li>
+        <li data-i18n="stt.m1">Four frozen 15-minute technical segments have the same SHA-256 source authority for every run.</li>
+        <li data-i18n="stt.m2">Every transcript must cover the complete duration using the same 25-second, zero-overlap chunk plan; model or device substitutions are rejected.</li>
+        <li data-i18n="stt.m3">Systems may propose candidate terms, but cannot grade themselves. A human listens to bounded intervals and creates the reference authority.</li>
+        <li data-i18n="stt.m4"><b>The primary score is exact Latin-script recall of the confirmed IT terms.</b> Cyrillic transliteration, a plausible wrong Latin spelling and an omission remain distinct errors.</li>
+        <li data-i18n="stt.m5">Runtime is a tie-break only. A fast model cannot win by turning the important word into a plausible but wrong one.</li>
       </ol>
     </section>
 
-    <h2>Why these eight variants</h2>
-    <section class="candidates" aria-label="Model inclusion rationale">
-      <article class="candidate"><small>Whisper baseline</small><h3>faster-whisper small</h3><p>Low-cost local baseline: it establishes what the larger Whisper variants actually buy.</p></article>
-      <article class="candidate"><small>Whisper frontier</small><h3>faster-whisper large-v3-turbo</h3><p>Tests the likely speed/accuracy frontier against domain spellings instead of assuming “turbo” is free.</p></article>
-      <article class="candidate"><small>Whisper ceiling</small><h3>faster-whisper large-v3</h3><p>Largest Whisper baseline for code-switched terms.</p></article>
-      <article class="candidate"><small>Russian-native</small><h3>GigaAM v3 e2e RNNT</h3><p>Official Russian end-to-end RNN-T path, pinned by source commit and checkpoint hash.</p></article>
-      <article class="candidate"><small>Independent CTC</small><h3>Meta MMS-1B Russian adapter</h3><p>Separates broad Russian coverage from the ability to retain English IT terminology.</p></article>
-      <article class="candidate"><small>LLM-style ASR</small><h3>Qwen3-ASR 0.6B</h3><p>Candidate designed to recognise product and vendor names inside Russian/English code-switching.</p></article>
-      <article class="candidate"><small>Joint model</small><h3>MOSS Transcribe Diarize 0.9B</h3><p>Tests whether a multilingual GPU-native model with speaker modelling helps podcast-like meeting audio.</p></article>
-      <article class="candidate"><small>Operational baseline</small><h3>Vosk Russian 0.42</h3><p>Explicit CPU-only offline baseline on a large machine: included to measure whether simple local speech recognition is operationally sufficient.</p></article>
+    <h2 class="sectionhead" data-i18n="stt.h2.why">Why these eight variants</h2>
+    <section class="cards candidates" aria-label="Model inclusion rationale">
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c1.l">Whisper baseline</p><h3>faster-whisper small</h3><p data-i18n="stt.c1.p">Low-cost local baseline: it establishes what the larger Whisper variants actually buy.</p></article>
+      <article class="card candidate winner"><p class="lbl"><span class="rank r1">1</span> <span data-i18n="stt.c2.l">Whisper frontier</span> <span class="win" data-i18n="stt.pick">pick</span></p><h3>faster-whisper large-v3-turbo</h3><p data-i18n="stt.c2.p">Tests the likely speed/accuracy frontier against domain spellings instead of assuming “turbo” is free. It is the transcript the operator confirmed as correct on the terms, and the fastest engine anywhere near that quality.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c3.l">Whisper ceiling</p><h3>faster-whisper large-v3</h3><p data-i18n="stt.c3.p">Largest Whisper baseline for code-switched terms.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c4.l">Russian-native</p><h3>GigaAM v3 e2e RNNT</h3><p data-i18n="stt.c4.p">Official Russian end-to-end RNN-T path, pinned by source commit and checkpoint hash.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c5.l">Independent CTC</p><h3>Meta MMS-1B Russian adapter</h3><p data-i18n="stt.c5.p">Separates broad Russian coverage from the ability to retain English IT terminology.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c6.l">LLM-style ASR</p><h3>Qwen3-ASR 0.6B</h3><p data-i18n="stt.c6.p">Candidate designed to recognise product and vendor names inside Russian/English code-switching.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c7.l">Joint model</p><h3>MOSS Transcribe Diarize 0.9B</h3><p data-i18n="stt.c7.p">Tests whether a multilingual GPU-native model with speaker modelling helps podcast-like meeting audio.</p></article>
+      <article class="card candidate"><p class="lbl" data-i18n="stt.c8.l">Operational baseline</p><h3>Vosk Russian 0.42</h3><p data-i18n="stt.c8.p">Explicit CPU-only offline baseline on a large machine: included to measure whether simple local speech recognition is operationally sufficient.</p></article>
     </section>
 
-    <p class="footer">The evidence viewer links to original audio sources and publishes the tested transcript artifacts; it does not copy corpus audio or disclose private paths or machine identifiers.</p>
+    <footer><p data-i18n="stt.foot">The evidence viewer links to original audio sources and publishes the tested transcript artifacts; it does not copy corpus audio or disclose private paths or machine identifiers.</p></footer>
   </main>
+
+  <script>
+    // Russian is the alternative; the English above is the default and the
+    // original. These strings are merged into the dictionary docs/i18n.js owns,
+    // rather than written into that shared file. Measured values, engine names
+    // and family names are never translated.
+    try {
+      if (typeof I18N === "object" && I18N && I18N.ru) Object.assign(I18N.ru, {
+        "stt.skip": "К отчёту",
+        "stt.back": "← все три задачи",
+        "stt.eyebrow": "Задача 2 · живой эксперимент",
+        "stt.h1": "Выбор расшифровщика для русских встреч, которые говорят на IT.",
+        "stt.lede": "Это не общий рейтинг распознавания речи. Каждый кандидат получает один и тот же " +
+                    "замороженный час русской речи с плотными английскими продуктовыми, вендорскими и " +
+                    "инженерными терминами.",
+        "stt.cta": "Открыть сравнение →",
+        "stt.cta.note": "Восемь движков рядом: сортируемая таблица всех измеренных метрик, четыре точных " +
+                        "15-минутных исходных окна, полные расшифровки всех восьми вариантов и синхронная " +
+                        "матрица 144 блока × 8 моделей.",
+        "stt.summary": "Восемь вариантов из шести независимых семейств STT обработали одни и те же 60 минут " +
+                       "фиксированными 25-секундными окнами без перекрытия. Все семь GPU-вариантов прошли " +
+                       "канарейку допуска, CPU-базлайн Vosk отработал, и 32 из 32 артефактов расшифровки " +
+                       "допущены. Затем оператор подтвердил одну расшифровку как верную по терминам — она " +
+                       "стала эталоном для 152 ограниченных по времени слотов, по которым оценён каждый вариант.",
+        "stt.h2.throughput": "Измеренная пропускная способность GPU",
+        "stt.table.caption": "Измеренная пропускная способность GPU для завершённых вариантов распознавания речи",
+        "stt.th.variant": "Вариант",
+        "stt.th.family": "Семейство",
+        "stt.th.device": "Устройство",
+        "stt.th.audio": "То же аудио",
+        "stt.th.time": "Время инференса",
+        "stt.th.speed": "Скорость",
+        "stt.th.state": "Состояние",
+        "stt.state.complete": "завершено",
+        "stt.v.label": "Берём этот",
+        "stt.v.terms": "Терминов в верном письме:",
+        "stt.v.speed": "час аудио за",
+        "stt.v.on": "на",
+        "stt.v.rule": "Ранжирование — по совпадению с подтверждённым эталоном; измеренное время инференса " +
+                      "разрешает ничью среди правильных и никогда не спасает движок, проигравший по " +
+                      "терминам. Следующий: faster-whisper large-v3 — 74 / 152 терминов, за 178.688 с.",
+        "stt.v.tautology": "Первое число нужно читать внимательно: эталонная расшифровка — это и есть вывод " +
+                           "данного движка, подтверждённый оператором как верный по терминам. Его 152 / 152 — " +
+                           "арифметика, а не свидетельство о нём. Ранжирование измеряет, насколько каждый " +
+                           "другой движок не дотягивает до подтверждённой человеком расшифровки, — и ни один " +
+                           "не достаёт даже до половины. Термин, который ошибся и сам эталон, слота не даёт " +
+                           "и остаётся невидимым для метода.",
+        "stt.th.rank": "#",
+        "stt.th.terms": "Терминов в верном письме",
+        "stt.pick": "выбор",
+        "stt.ref": "эталон",
+        "stt.tb.h": "Почему скорость — только тай-брейк.",
+        "stt.tb.p": "Meta MMS-1B — самый быстрый из измеренных: 19.1 с на час, 188.2× реального времени — и " +
+                    "восстанавливает <b>1 из 152</b> подтверждённых терминов. Ранжирование по скорости " +
+                    "отдало бы работу ему. Скорость доказывает, что модель успевает; она не доказывает, что " +
+                    "модель сохранила <em>ClickHouse</em>, <em>RAG</em> или название вендора.",
+        "stt.hy.h": "Исходная догадка оказалась неверной, и доказывают это числа.",
+        "stt.hy.p": "До подсчёта ожидалось, что выбор падёт на MOSS или Vosk. MOSS совпадает по " +
+                    "<b>63 / 152</b> терминам и требует <b>1 343.3 с</b> там, где победителю нужно " +
+                    "<b>71.5 с</b>; Vosk совпадает по <b>0 / 152</b>. Ноль у Vosk — не сломанный прогон: за " +
+                    "час он выдал 49 602 символа русского текста и <b>ни одного латинского токена</b>, " +
+                    "транслитерируя каждый термин (<em>LSP</em> → «ласпи», <em>JetBrains</em> → «джек " +
+                    "брэндс»). Ровно этот провал оценка и ловит — поэтому метрика есть доля терминов в " +
+                    "верном письме, а не WER.",
+        "stt.h2.method": "Что здесь значит «лучше»",
+        "stt.m1": "Четыре замороженных 15-минутных технических сегмента имеют один и тот же авторитет " +
+                  "источника по SHA-256 для каждого прогона.",
+        "stt.m2": "Каждая расшифровка обязана покрыть всю длительность тем же 25-секундным планом блоков " +
+                  "без перекрытия; подмена модели или устройства отвергается.",
+        "stt.m3": "Системы могут предлагать кандидатов в термины, но не могут оценивать сами себя. Человек " +
+                  "слушает ограниченные интервалы и создаёт опорный авторитет.",
+        "stt.m4": "<b>Первичная оценка — точное восстановление подтверждённых IT-терминов латиницей.</b> " +
+                  "Кириллическая транслитерация, правдоподобное неверное латинское написание и пропуск " +
+                  "остаются разными ошибками.",
+        "stt.m5": "Время выполнения — только тай-брейк. Быстрая модель не выигрывает тем, что превратила " +
+                  "важное слово в правдоподобное, но неверное.",
+        "stt.h2.why": "Почему именно эти восемь вариантов",
+        "stt.c1.l": "Базлайн Whisper",
+        "stt.c1.p": "Дешёвый локальный базлайн: показывает, что на самом деле дают более крупные варианты Whisper.",
+        "stt.c2.l": "Фронтир Whisper",
+        "stt.c2.p": "Проверяет вероятный фронтир скорость/точность на доменных написаниях вместо допущения, " +
+                    "что «turbo» достаётся бесплатно. Именно эту расшифровку оператор подтвердил как верную " +
+                    "по терминам, и это самый быстрый движок вблизи такого качества.",
+        "stt.c3.l": "Потолок Whisper",
+        "stt.c3.p": "Самый крупный базлайн Whisper для терминов с переключением кода.",
+        "stt.c4.l": "Русскоязычная",
+        "stt.c4.p": "Официальный русский end-to-end RNN-T, закреплённый коммитом исходников и хэшем чекпоинта.",
+        "stt.c5.l": "Независимый CTC",
+        "stt.c5.p": "Отделяет широкое покрытие русского от способности удерживать английскую IT-терминологию.",
+        "stt.c6.l": "ASR в стиле LLM",
+        "stt.c6.p": "Кандидат, рассчитанный на распознавание названий продуктов и вендоров внутри " +
+                    "русско-английского переключения кода.",
+        "stt.c7.l": "Совместная модель",
+        "stt.c7.p": "Проверяет, помогает ли мультиязычная GPU-нативная модель с моделированием говорящих " +
+                    "на подкастоподобном аудио встреч.",
+        "stt.c8.l": "Операционный базлайн",
+        "stt.c8.p": "Явный CPU-only офлайн-базлайн на большой машине: включён, чтобы измерить, достаточно " +
+                    "ли простого локального распознавания речи операционно.",
+        "stt.foot": "Просмотрщик доказательств ссылается на исходные аудиоисточники и публикует " +
+                    "протестированные артефакты расшифровок; он не копирует корпусное аудио и не раскрывает " +
+                    "приватные пути или идентификаторы машин.",
+      });
+    } catch (e) { /* English only */ }
+  </script>
 </body>
 </html>

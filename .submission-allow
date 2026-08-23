@@ -14,3 +14,14 @@ vastai
 # submission hands over the same link. Public by intent, not by accident.
 anastasi
 anastasiyaw
+
+# Russian first names spoken inside the Task 2 podcast transcripts. The denylist
+# carries these because colleagues of ours share them; here they are a DevZen
+# host addressing a guest ("Ты, Игорь, или ты, Алексей?") in audio anyone can
+# download from devzen.ru, transcribed verbatim by eight engines. They are the
+# measurement, not our data - the deliverable is what the engines heard, so
+# substituting them would falsify the transcript the score is computed from.
+# Already live on the published page before this exception existed.
+игорь
+игор
+егор
