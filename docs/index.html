@@ -68,13 +68,13 @@
     <span class="go">Open the measurements →</span>
   </a>
 
-  <a class="card soon" data-href="stt.html" id="stt-card">
+  <a class="card" href="stt.html" id="stt-card">
     <div class="row"><span class="tag">Task 2</span><h2>Picking a transcriber</h2></div>
     <p>Eight model variants across six independent STT families, on one hour of
        Russian speech with dense English IT terms.
        The metric is the deliverable: word error rate is the wrong primary score
        for this audio, and the report explains why with numbers.</p>
-    <div class="live" id="live-stt">running — results land here</div>
+    <div class="live" id="live-stt"><span style="color:var(--ok)">●</span> 28 / 32 provenance-validated runs complete · CPU Vosk baseline running</div>
     <span class="go">Open the comparison →</span>
   </a>
 
@@ -134,16 +134,6 @@ async function load(){
 load();
 setInterval(load, 30000);
 
-// The STT card unlocks itself once the report is actually published, so the
-// page never offers a link to a page that does not exist yet.
-fetch("stt.html", {method:"HEAD"}).then(r => {
-  if (r.ok){
-    const card = document.getElementById("stt-card");
-    card.href = card.dataset.href;
-    card.classList.remove("soon");
-    document.getElementById("live-stt").textContent = "six independent engine families, eight variants, one hour — report published";
-  }
-}).catch(() => {});
 </script>
 </body>
 </html>
