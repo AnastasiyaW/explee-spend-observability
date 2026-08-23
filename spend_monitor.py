@@ -1268,7 +1268,12 @@ def write_snapshot(conn, world, path: Path = SNAPSHOT_PATH, alerts_path: Path = 
         # would refuse to act on must not be published as if it were solid.
         acute, _drops = acute_rate(conn, provider, world)
         rates = [r for r in (window_rate(conn, provider, world), acute) if r and r > 0]
-        runway = (value / max(rates)) if (warm and rates and value and value > 0) else None
+        # Postpaid has no floor, so it has no hours-until-empty - and the table
+        # is sorted by that column, which put the one account that cannot run
+        # out at the top of a page whose whole job is to say what will.
+        postpaid = (last_ok["model"] if last_ok else None) == "postpaid"
+        runway = (value / max(rates)) if (
+            warm and rates and value and value > 0 and not postpaid) else None
         series = conn.execute(
             "SELECT ts, value FROM samples WHERE provider=? AND ok=1 AND value IS NOT NULL "
             "AND ts>=? AND world_epoch IS ? AND fingerprint IS ? ORDER BY ts",
