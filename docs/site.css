@@ -125,26 +125,40 @@ tbody tr:hover td{background:var(--hover)}
   background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .btn[disabled]{opacity:.4;cursor:default}
 
-/* A toggle is not a link, and it was a mistake to dress it as one. A ghost
-   link is accent-coloured because it is still an invitation; an OFF toggle is
-   not an invitation, it is a state, and painting it accent blue made a row of
-   eight chips read as eight identical blue pills whether they were on or off.
-   OFF is quiet now - muted text, muted border, hollow marker. ON is filled,
-   with the marker filled to match. The marker also says which kind of choice
-   this is: a square is one of many, a circle is one instead of the others. */
-.btn.toggle{background:transparent;color:var(--muted);border-color:var(--line);
-  font-weight:600;font-size:12px;padding:4px 10px 4px 8px}
-.btn.toggle::before{content:"";display:inline-block;width:9px;height:9px;
-  margin-right:7px;vertical-align:-1px;border:1px solid var(--muted);
+/* A toggle is not a link, and dressing it as one is why the control said
+   nothing. Two failures, both measured on the rendered page rather than
+   guessed: an OFF chip painted with the accent read as another kind of ON, so
+   a row of eight looked like one undifferentiated blue block; and an OFF chip
+   painted with --panel sat on a --panel container, which made it the same
+   colour as the surface behind it and left a 1px border doing all the work.
+
+   OFF is therefore recessed, not absent and not accented: the page ground,
+   which is darker than any panel it can sit on, with muted text and a hollow
+   marker. ON is filled, with the marker filled to match. The marker also says
+   which kind of choice this is - a square is one of many, a circle is one
+   instead of the others - so a multi-select row and a single-select row stop
+   looking like the same control with different labels.
+
+   button.ctl shares this block rather than restating it. The state rule lived
+   in two files for a while, which is the shape that lets one copy drift. */
+.btn.toggle,button.ctl{background:var(--bg);color:var(--muted);border:1px solid var(--line);
+  font-weight:600;cursor:pointer;font-family:inherit}
+.btn.toggle{font-size:12px;padding:4px 10px 4px 8px}
+.btn.toggle::before,#matrix-tabs button::before{content:"";display:inline-block;
+  width:9px;height:9px;margin-right:7px;vertical-align:-1px;border:1px solid var(--muted);
   border-radius:2px;background:transparent}
-.btn.toggle.one::before{border-radius:50%}
-.btn.toggle:hover{opacity:1;color:var(--ink);border-color:var(--muted);background:var(--hover)}
-.btn.toggle[aria-pressed="true"],.btn.toggle[aria-current="true"]{
+.btn.toggle.one::before,#matrix-tabs button::before{border-radius:50%}
+.btn.toggle:hover,button.ctl:hover{opacity:1;color:var(--ink);border-color:var(--muted);
+  background:var(--hover)}
+.btn.toggle[aria-pressed="true"],.btn.toggle[aria-current="true"],
+button.ctl[aria-pressed="true"]{
   background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.btn.toggle[aria-pressed="true"]::before,.btn.toggle[aria-current="true"]::before{
+.btn.toggle[aria-pressed="true"]::before,.btn.toggle[aria-current="true"]::before,
+#matrix-tabs button[aria-pressed="true"]::before{
   background:var(--on-accent);border-color:var(--on-accent);
   box-shadow:inset 0 0 0 1.5px var(--accent)}
-.btn.toggle[aria-pressed="true"]:hover,.btn.toggle[aria-current="true"]:hover{
+.btn.toggle[aria-pressed="true"]:hover,.btn.toggle[aria-current="true"]:hover,
+button.ctl[aria-pressed="true"]:hover{
   background:var(--accent);color:var(--on-accent);opacity:.88}
 
 /* A row of second-rank controls: chips, tabs, a model picker. */

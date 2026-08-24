@@ -57,8 +57,7 @@
 .grid.playing{outline:2px solid var(--accent,#2b5cd9);outline-offset:5px;border-radius:var(--r-sm,7px)}
 button.ctl.stop{border-color:var(--crit,#b3261e);color:var(--crit,#b3261e);font-weight:650}
 button.ctl.stop:hover{background:var(--crit,#b3261e);color:var(--on-accent,#fff)}
-button.ctl[aria-pressed="true"]{background:var(--accent,#2b5cd9);color:var(--on-accent,#fff);
-  border-color:var(--accent,#2b5cd9)}
+
 .terms{font-variant-numeric:tabular-nums;font-weight:650}
 .terms small{display:block;font-weight:400;color:var(--muted,#6b6a60);font-size:11.5px}
 .fails{margin:0;font-size:12px;line-height:1.9;color:var(--muted,#6b6a60)}
@@ -70,11 +69,15 @@ button.ctl[aria-pressed="true"]{background:var(--accent,#2b5cd9);color:var(--on-
 .controls{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:0 0 10px}
 .field{display:flex;flex-direction:column;gap:4px}
 .field>span{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted,#6b6a60);font-weight:600}
-select,button.ctl{font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line,#e3e2dc);
-  border-radius:var(--r-sm,7px);background:var(--panel,#fff);color:var(--ink,#16150f)}
+/* Sizing only. Colour and the on/off states come from site.css, which owns the
+   toggle look for the whole site; setting background here again put the same
+   invariant in two files and this copy silently won the cascade, which is how
+   an OFF chip ended up painted the same colour as the panel behind it. */
+select,button.ctl{font:inherit;font-size:13px;padding:6px 9px;border-radius:var(--r-sm)}
+select{border:1px solid var(--line);background:var(--panel);color:var(--ink)}
 button.ctl{cursor:pointer}
 button.ctl:hover{background:var(--hover,#f7f6f2)}
-button.ctl[aria-pressed="true"]{background:var(--accent,#2b5cd9);color:var(--on-accent,#fff);border-color:var(--accent,#2b5cd9)}
+
 
 /* --- the comparison table ------------------------------------------------ */
 .cmp{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -186,6 +189,10 @@ td.mono{font-family:var(--f-mono,monospace);font-size:11px;overflow-wrap:anywher
 <p class="vrule"><span data-i18n="ev.v.beat">Next best:</span> faster-whisper large-v3 — <b>74 / 152</b> <span data-i18n="ev.v.beat2">terms, in</span> 178.688 s.</p>
 <p class="vcaveat"><span data-i18n="ev.v.tautology">Read that first number carefully: the reference transcript <em>is</em> this engine's output, confirmed correct on the terms by the operator. Its 152 / 152 is therefore arithmetic, not evidence about it. What the ranking measures is how far each other engine falls short of a transcript a human has confirmed — and none of them reaches half of it.</span></p>
 </section>
+<h2 class="sectionhead" data-i18n="ev.h.hour">The whole hour: time × every engine</h2>
+<p class="lede" data-i18n="ev.hour.p">Each segment is one of the four consecutive 15-minute windows. A row is an exact 25 seconds of audio; the eight adjacent cells are what every engine heard in that same row. Opened on demand, so the page does not draw cells nobody asked for.</p>
+<div class="controls" id="matrix-tabs"><button type="button" class="ctl" data-segment="seg_dz548" aria-pressed="true">seg_dz548</button><button type="button" class="ctl" data-segment="seg_dz550" aria-pressed="false">seg_dz550</button><button type="button" class="ctl" data-segment="seg_rt1025" aria-pressed="false">seg_rt1025</button><button type="button" class="ctl" data-segment="seg_rt1027" aria-pressed="false">seg_rt1027</button></div>
+<div id="matrix-host"></div>
 <section class="panel note primary">
 <p><strong data-i18n="ev.primary.h">The primary metric of this evaluation is not WER.</strong> <span data-i18n="ev.primary.p">The speech is Russian and the terminology is English. WER barely distinguishes <em>ClickHouse</em> from a Cyrillic transliteration of it, yet for a meeting record that is exactly the difference between a usable and a useless transcript. So the primary score is the share of human-confirmed IT terms recovered in their accepted Latin spelling in the right interval. A Cyrillic transliteration, a plausible wrong Latin spelling and an omission are three different errors, not one.</span></p>
 <p><strong data-i18n="ev.ceiling.h">What this ranking cannot see.</strong> <span data-i18n="ev.ceiling.p">It measures agreement with a human-confirmed reference transcript, so a term that every engine <em>including the reference</em> got wrong produces no slot and is never counted. The slots are 25 seconds wide and always contain speech, so a failure means “this engine did not write that term in Latin script here”, not “this engine was silent”. And no Cyrillic transliteration list was confirmed by a human, so a transliterated rendering is counted as a wrong rendering rather than as its own class — the side-by-side view below shows what each engine actually wrote.</span></p>
@@ -212,10 +219,6 @@ td.mono{font-family:var(--f-mono,monospace);font-size:11px;overflow-wrap:anywher
 <p class="status" id="compare-meta" aria-live="polite"></p>
 <p class="status" id="listen-status" aria-live="polite"></p>
 <div class="grid" id="compare-grid"></div>
-<h2 class="sectionhead" data-i18n="ev.h.hour">The whole hour: time × every engine</h2>
-<p class="lede" data-i18n="ev.hour.p">Each segment is one of the four consecutive 15-minute windows. A row is an exact 25 seconds of audio; the eight adjacent cells are what every engine heard in that same row. Opened on demand, so the page does not draw cells nobody asked for.</p>
-<div class="controls" id="matrix-tabs"><button type="button" class="ctl" data-segment="seg_dz548" aria-pressed="false">seg_dz548</button><button type="button" class="ctl" data-segment="seg_dz550" aria-pressed="false">seg_dz550</button><button type="button" class="ctl" data-segment="seg_rt1025" aria-pressed="false">seg_rt1025</button><button type="button" class="ctl" data-segment="seg_rt1027" aria-pressed="false">seg_rt1027</button></div>
-<div id="matrix-host"></div>
 <h2 class="sectionhead" data-i18n="ev.h.sources">Sources and full audio</h2>
 <p class="lede" data-i18n="ev.sources.p">Audio is linked only, never copied or embedded. The SHA-256 is the same hash the validator admitted every artifact against.</p>
 <section class="panel scroll"><table><thead><tr><th data-i18n="ev.th.segment">Segment</th><th data-i18n="ev.th.title">Title</th><th data-i18n="ev.th.link">Link</th><th data-i18n="ev.th.episode">Episode / start</th><th class="num" data-i18n="ev.th.length">Length</th><th data-i18n="ev.th.sha">Source SHA-256</th><th data-i18n="ev.th.player">Player</th></tr></thead><tbody>
@@ -251,7 +254,7 @@ td.mono{font-family:var(--f-mono,monospace);font-size:11px;overflow-wrap:anywher
 
   const state = { scope: "all",
                   sort: DATA.winner ? { key: "terms", dir: -1 } : { key: "order", dir: 1 },
-                  segment: DATA.segments[0].id, block: 0, open: null, matrix: null };
+                  segment: DATA.segments[0].id, block: 0, open: null, matrix: DATA.segments[0].id };
   const segmentById = Object.fromEntries(DATA.segments.map(s => [s.id, s]));
 
   /* ---- the sortable comparison table ---------------------------------- */
@@ -649,6 +652,7 @@ td.mono{font-family:var(--f-mono,monospace);font-size:11px;overflow-wrap:anywher
   fillBlocks();
   renderTable();
   renderCompare();
+  renderMatrix();
 })();
 </script>
 </body></html>
