@@ -1,38 +1,38 @@
 {
- "generated": "2026-09-10T15:57:41+00:00",
+ "generated": "2026-09-10T16:02:50+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
  },
  "api": {
-  "reads": 52229,
-  "ok": 48536,
-  "failed": 3693,
-  "success_pct": 92.93,
+  "reads": 52053,
+  "ok": 48356,
+  "failed": 3697,
+  "success_pct": 92.9,
   "latency_ms": {
-   "p50": 169.9,
-   "p95": 484.0,
+   "p50": 169.7,
+   "p95": 484.2,
    "max": 40233.0
   },
   "faults": [
    {
     "kind": "429 rate limited (429)",
-    "count": 1466,
+    "count": 1461,
     "providers": 2
    },
    {
     "kind": "504 http 504",
-    "count": 782,
+    "count": 780,
     "providers": 15
    },
    {
     "kind": "200 empty json object",
-    "count": 758,
+    "count": 755,
     "providers": 15
    },
    {
     "kind": "500 http 500",
-    "count": 377,
+    "count": 391,
     "providers": 15
    },
    {
@@ -58,78 +58,78 @@
   ],
   "per_provider": {
    "findymail": {
-    "reads": 2614,
-    "failed": 853,
+    "reads": 2611,
+    "failed": 852,
     "failure_pct": 32.6
    },
    "tremendous": {
-    "reads": 2735,
-    "failed": 815,
+    "reads": 2726,
+    "failed": 811,
     "failure_pct": 29.8
    },
    "openrouter": {
-    "reads": 3550,
-    "failed": 172,
-    "failure_pct": 4.8
+    "reads": 3538,
+    "failed": 173,
+    "failure_pct": 4.9
    },
    "twocaptcha": {
-    "reads": 3582,
-    "failed": 164,
+    "reads": 3570,
+    "failed": 165,
+    "failure_pct": 4.6
+   },
+   "resend": {
+    "reads": 3550,
+    "failed": 163,
+    "failure_pct": 4.6
+   },
+   "evomi": {
+    "reads": 3560,
+    "failed": 163,
+    "failure_pct": 4.6
+   },
+   "meta_ads": {
+    "reads": 3563,
+    "failed": 163,
     "failure_pct": 4.6
    },
    "bounceban": {
-    "reads": 3653,
+    "reads": 3640,
     "failed": 164,
     "failure_pct": 4.5
    },
-   "evomi": {
-    "reads": 3573,
-    "failed": 162,
-    "failure_pct": 4.5
-   },
-   "meta_ads": {
-    "reads": 3576,
-    "failed": 162,
-    "failure_pct": 4.5
-   },
-   "resend": {
-    "reads": 3562,
+   "elevenlabs": {
+    "reads": 3606,
     "failed": 162,
     "failure_pct": 4.5
    },
    "anthropic": {
-    "reads": 3660,
+    "reads": 3647,
     "failed": 160,
     "failure_pct": 4.4
    },
-   "elevenlabs": {
-    "reads": 3619,
-    "failed": 161,
-    "failure_pct": 4.4
-   },
    "vastai": {
-    "reads": 3582,
+    "reads": 3569,
     "failed": 151,
     "failure_pct": 4.2
    },
    "scrapfly": {
-    "reads": 3622,
-    "failed": 145,
+    "reads": 3609,
+    "failed": 146,
     "failure_pct": 4.0
    },
    "brightdata": {
-    "reads": 3618,
+    "reads": 3605,
     "failed": 146,
     "failure_pct": 4.0
    },
    "zerobounce": {
-    "reads": 3652,
-    "failed": 139,
+    "reads": 3640,
+    "failed": 140,
     "failure_pct": 3.8
    },
    "openai": {
-    "reads": 3631,
-    "failed": 137,
+    "reads": 3619,
+    "failed": 138,
     "failure_pct": 3.8
    }
   }
@@ -145,14 +145,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 1013.5615,
-   "runway_h": 35.89,
+   "baseline_per_h": 1029.1169,
+   "runway_h": 34.95,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:56:04+00:00",
+   "last_seen": "2026-09-10T16:01:09+00:00",
    "last_ok_seen": "2026-09-10T15:35:11+00:00",
-   "samples": 503,
+   "samples": 496,
    "topups_6h": 0,
    "series": [
     [
@@ -1765,15 +1765,15 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 3.067,
-   "baseline_per_h": 2.4995,
-   "runway_h": 101.72,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 2.5167,
+   "runway_h": 101.77,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:23+00:00",
+   "last_seen": "2026-09-10T15:59:24+00:00",
    "last_ok_seen": "2026-09-10T15:43:12+00:00",
-   "samples": 550,
+   "samples": 537,
    "topups_6h": 0,
    "series": [
     [
@@ -3386,15 +3386,15 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 4.7979,
-   "baseline_per_h": 4.362,
-   "runway_h": 124.56,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 4.2839,
+   "runway_h": 125.09,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:17+00:00",
+   "last_seen": "2026-09-10T15:59:19+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
-   "samples": 532,
+   "samples": 518,
    "topups_6h": 0,
    "series": [
     [
@@ -5007,15 +5007,15 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 3.0022,
-   "baseline_per_h": 2.5786,
-   "runway_h": 134.84,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 2.4779,
+   "runway_h": 134.51,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:16+00:00",
+   "last_seen": "2026-09-10T15:59:18+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
-   "samples": 558,
+   "samples": 545,
    "topups_6h": 0,
    "series": [
     [
@@ -6628,13 +6628,13 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 6.4824,
-   "baseline_per_h": 6.4974,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 6.5569,
    "runway_h": 166.69,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:20+00:00",
+   "last_seen": "2026-09-10T15:59:23+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 489,
    "topups_6h": 1,
@@ -8250,14 +8250,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 56.4651,
-   "runway_h": 171.22,
+   "baseline_per_h": 57.0804,
+   "runway_h": 170.65,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:56:09+00:00",
+   "last_seen": "2026-09-10T16:01:11+00:00",
    "last_ok_seen": "2026-09-10T15:43:04+00:00",
-   "samples": 295,
+   "samples": 283,
    "topups_6h": 0,
    "series": [
     [
@@ -9870,15 +9870,15 @@
    "capacity": 1000000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 5227.15,
-   "baseline_per_h": 4963.6103,
-   "runway_h": 173.07,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 4855.9365,
+   "runway_h": 173.27,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:13+00:00",
+   "last_seen": "2026-09-10T15:59:17+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
-   "samples": 486,
+   "samples": 471,
    "topups_6h": 0,
    "series": [
     [
@@ -11491,15 +11491,15 @@
    "capacity": 50000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 316.8785,
-   "baseline_per_h": 223.4911,
-   "runway_h": 180.45,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 223.7483,
+   "runway_h": 180.65,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:17+00:00",
+   "last_seen": "2026-09-10T15:59:20+00:00",
    "last_ok_seen": "2026-09-10T15:43:17+00:00",
-   "samples": 553,
+   "samples": 539,
    "topups_6h": 1,
    "series": [
     [
@@ -13113,14 +13113,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 35.5358,
-   "runway_h": 188.16,
+   "baseline_per_h": 33.3993,
+   "runway_h": 188.33,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:23+00:00",
+   "last_seen": "2026-09-10T15:59:26+00:00",
    "last_ok_seen": "2026-09-10T15:43:06+00:00",
-   "samples": 563,
+   "samples": 550,
    "topups_6h": 2,
    "series": [
     [
@@ -14734,15 +14734,15 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 0.3217,
-   "runway_h": 251.83,
+   "baseline_per_h": 0.3138,
+   "runway_h": 251.99,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:52:59+00:00",
+   "last_seen": "2026-09-10T15:58:03+00:00",
    "last_ok_seen": "2026-09-10T15:41:50+00:00",
-   "samples": 543,
-   "topups_6h": 2,
+   "samples": 529,
+   "topups_6h": 1,
    "series": [
     [
      1789044950,
@@ -16354,15 +16354,15 @@
    "capacity": 150000.0,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 402.2501,
-   "baseline_per_h": 478.0845,
-   "runway_h": 281.87,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 474.6087,
+   "runway_h": 281.46,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:20+00:00",
+   "last_seen": "2026-09-10T15:59:22+00:00",
    "last_ok_seen": "2026-09-10T15:43:25+00:00",
-   "samples": 548,
+   "samples": 534,
    "topups_6h": 0,
    "series": [
     [
@@ -17976,14 +17976,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 3.1819,
-   "runway_h": 436.45,
+   "baseline_per_h": 2.9269,
+   "runway_h": 432.41,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:56:01+00:00",
+   "last_seen": "2026-09-10T16:01:07+00:00",
    "last_ok_seen": "2026-09-10T15:42:33+00:00",
-   "samples": 297,
+   "samples": 288,
    "topups_6h": 3,
    "series": [
     [
@@ -19602,9 +19602,9 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:18+00:00",
+   "last_seen": "2026-09-10T15:59:22+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
-   "samples": 565,
+   "samples": 552,
    "topups_6h": 0,
    "series": []
   },
@@ -19622,9 +19622,9 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:20+00:00",
+   "last_seen": "2026-09-10T15:59:23+00:00",
    "last_ok_seen": "2026-09-10T15:43:27+00:00",
-   "samples": 536,
+   "samples": 522,
    "topups_6h": 0,
    "series": []
   },
@@ -19636,15 +19636,15 @@
    "capacity": null,
    "spend_24h": null,
    "spend_30d": null,
-   "burn_per_h": 4.7509,
-   "baseline_per_h": 4.7046,
+   "burn_per_h": 0.0,
+   "baseline_per_h": 4.6923,
    "runway_h": null,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:54:22+00:00",
+   "last_seen": "2026-09-10T15:59:25+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
-   "samples": 547,
+   "samples": 534,
    "topups_6h": 0,
    "series": [
     [
@@ -21252,6 +21252,23 @@
  ],
  "alerts": [
   {
+   "ts": "2026-09-10T16:01:09+00:00",
+   "provider": "resend",
+   "text": "resend: 10 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 10,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-10T15:59:23+00:00",
+   "provider": "",
+   "text": "the stand's catalog (/providers) has failed 3 times in a row. Nothing is being recorded: every sample is keyed by the world identity and every provider comes from the catalog, so this is the monitor going blind rather than one account going quiet.",
+   "level": "critical",
+   "kind": "control",
+   "failures": 3
+  },
+  {
    "ts": "2026-09-10T15:46:10+00:00",
    "provider": "",
    "text": "the stand's world identity (/meta) has failed 3 times in a row. Nothing is being recorded: every sample is keyed by the world identity and every provider comes from the catalog, so this is the monitor going blind rather than one account going quiet.",
@@ -21769,24 +21786,6 @@
    "kind": "stale",
    "failures": 3,
    "reason": "http 503"
-  },
-  {
-   "ts": "2026-09-10T09:58:43+00:00",
-   "provider": "brightdata",
-   "text": "brightdata: 3 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "warn",
-   "kind": "stale",
-   "failures": 3,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-10T09:46:43+00:00",
-   "provider": "tremendous",
-   "text": "tremendous: 3 consecutive failed reads (rate limited (429)). No current balance - a spend spike here would not be seen.",
-   "level": "warn",
-   "kind": "stale",
-   "failures": 3,
-   "reason": "rate limited (429)"
   }
  ]
 }
