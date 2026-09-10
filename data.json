@@ -1,43 +1,43 @@
 {
- "generated": "2026-09-10T16:02:50+00:00",
+ "generated": "2026-09-10T16:07:58+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
  },
  "api": {
-  "reads": 52053,
-  "ok": 48356,
-  "failed": 3697,
-  "success_pct": 92.9,
+  "reads": 51883,
+  "ok": 48191,
+  "failed": 3692,
+  "success_pct": 92.88,
   "latency_ms": {
-   "p50": 169.7,
-   "p95": 484.2,
+   "p50": 169.6,
+   "p95": 483.0,
    "max": 40233.0
   },
   "faults": [
    {
     "kind": "429 rate limited (429)",
-    "count": 1461,
+    "count": 1452,
     "providers": 2
    },
    {
     "kind": "504 http 504",
-    "count": 780,
+    "count": 777,
     "providers": 15
    },
    {
     "kind": "200 empty json object",
-    "count": 755,
+    "count": 752,
     "providers": 15
    },
    {
     "kind": "500 http 500",
-    "count": 391,
+    "count": 406,
     "providers": 15
    },
    {
     "kind": "503 http 503",
-    "count": 283,
+    "count": 278,
     "providers": 14
    },
    {
@@ -58,79 +58,79 @@
   ],
   "per_provider": {
    "findymail": {
-    "reads": 2611,
-    "failed": 852,
+    "reads": 2600,
+    "failed": 847,
     "failure_pct": 32.6
    },
    "tremendous": {
-    "reads": 2726,
-    "failed": 811,
+    "reads": 2715,
+    "failed": 808,
     "failure_pct": 29.8
    },
    "openrouter": {
-    "reads": 3538,
-    "failed": 173,
+    "reads": 3526,
+    "failed": 174,
     "failure_pct": 4.9
    },
    "twocaptcha": {
-    "reads": 3570,
-    "failed": 165,
+    "reads": 3558,
+    "failed": 166,
+    "failure_pct": 4.7
+   },
+   "meta_ads": {
+    "reads": 3552,
+    "failed": 164,
     "failure_pct": 4.6
    },
    "resend": {
-    "reads": 3550,
-    "failed": 163,
-    "failure_pct": 4.6
-   },
-   "evomi": {
-    "reads": 3560,
-    "failed": 163,
-    "failure_pct": 4.6
-   },
-   "meta_ads": {
-    "reads": 3563,
-    "failed": 163,
+    "reads": 3538,
+    "failed": 162,
     "failure_pct": 4.6
    },
    "bounceban": {
-    "reads": 3640,
-    "failed": 164,
+    "reads": 3627,
+    "failed": 163,
     "failure_pct": 4.5
    },
    "elevenlabs": {
-    "reads": 3606,
-    "failed": 162,
+    "reads": 3594,
+    "failed": 163,
+    "failure_pct": 4.5
+   },
+   "evomi": {
+    "reads": 3555,
+    "failed": 159,
     "failure_pct": 4.5
    },
    "anthropic": {
-    "reads": 3647,
-    "failed": 160,
+    "reads": 3635,
+    "failed": 161,
     "failure_pct": 4.4
    },
    "vastai": {
-    "reads": 3569,
-    "failed": 151,
-    "failure_pct": 4.2
-   },
-   "scrapfly": {
-    "reads": 3609,
-    "failed": 146,
-    "failure_pct": 4.0
+    "reads": 3558,
+    "failed": 152,
+    "failure_pct": 4.3
    },
    "brightdata": {
-    "reads": 3605,
-    "failed": 146,
-    "failure_pct": 4.0
+    "reads": 3593,
+    "failed": 147,
+    "failure_pct": 4.1
+   },
+   "scrapfly": {
+    "reads": 3597,
+    "failed": 147,
+    "failure_pct": 4.1
    },
    "zerobounce": {
-    "reads": 3640,
+    "reads": 3628,
     "failed": 140,
-    "failure_pct": 3.8
+    "failure_pct": 3.9
    },
    "openai": {
-    "reads": 3619,
-    "failed": 138,
-    "failure_pct": 3.8
+    "reads": 3607,
+    "failed": 139,
+    "failure_pct": 3.9
    }
   }
  },
@@ -145,12 +145,12 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 1029.1169,
+   "baseline_per_h": 1023.5241,
    "runway_h": 34.95,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T16:01:09+00:00",
+   "last_seen": "2026-09-10T16:06:14+00:00",
    "last_ok_seen": "2026-09-10T15:35:11+00:00",
    "samples": 496,
    "topups_6h": 0,
@@ -1766,14 +1766,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 2.5167,
-   "runway_h": 101.77,
+   "baseline_per_h": 2.5564,
+   "runway_h": 101.65,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:24+00:00",
+   "last_seen": "2026-09-10T16:04:26+00:00",
    "last_ok_seen": "2026-09-10T15:43:12+00:00",
-   "samples": 537,
+   "samples": 525,
    "topups_6h": 0,
    "series": [
     [
@@ -3387,14 +3387,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 4.2839,
-   "runway_h": 125.09,
+   "baseline_per_h": 4.3294,
+   "runway_h": 125.72,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:19+00:00",
+   "last_seen": "2026-09-10T16:04:21+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
-   "samples": 518,
+   "samples": 506,
    "topups_6h": 0,
    "series": [
     [
@@ -5008,14 +5008,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 2.4779,
-   "runway_h": 134.51,
+   "baseline_per_h": 2.5118,
+   "runway_h": 134.17,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:18+00:00",
+   "last_seen": "2026-09-10T16:04:21+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
-   "samples": 545,
+   "samples": 532,
    "topups_6h": 0,
    "series": [
     [
@@ -6629,14 +6629,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 6.5569,
-   "runway_h": 166.69,
+   "baseline_per_h": 6.6393,
+   "runway_h": 166.56,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:23+00:00",
+   "last_seen": "2026-09-10T16:04:26+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
-   "samples": 489,
+   "samples": 487,
    "topups_6h": 1,
    "series": [
     [
@@ -8250,14 +8250,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 57.0804,
-   "runway_h": 170.65,
+   "baseline_per_h": 56.2338,
+   "runway_h": 170.6,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T16:01:11+00:00",
+   "last_seen": "2026-09-10T16:06:14+00:00",
    "last_ok_seen": "2026-09-10T15:43:04+00:00",
-   "samples": 283,
+   "samples": 273,
    "topups_6h": 0,
    "series": [
     [
@@ -9871,14 +9871,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 4855.9365,
-   "runway_h": 173.27,
+   "baseline_per_h": 4895.2519,
+   "runway_h": 173.78,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:17+00:00",
+   "last_seen": "2026-09-10T16:04:20+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
-   "samples": 471,
+   "samples": 469,
    "topups_6h": 0,
    "series": [
     [
@@ -11492,14 +11492,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 223.7483,
-   "runway_h": 180.65,
+   "baseline_per_h": 226.8565,
+   "runway_h": 180.71,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:20+00:00",
+   "last_seen": "2026-09-10T16:04:23+00:00",
    "last_ok_seen": "2026-09-10T15:43:17+00:00",
-   "samples": 539,
+   "samples": 525,
    "topups_6h": 1,
    "series": [
     [
@@ -13113,14 +13113,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 33.3993,
-   "runway_h": 188.33,
+   "baseline_per_h": 34.2735,
+   "runway_h": 186.67,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:26+00:00",
+   "last_seen": "2026-09-10T16:04:28+00:00",
    "last_ok_seen": "2026-09-10T15:43:06+00:00",
-   "samples": 550,
+   "samples": 536,
    "topups_6h": 2,
    "series": [
     [
@@ -14734,14 +14734,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 0.3138,
-   "runway_h": 251.99,
+   "baseline_per_h": 0.3262,
+   "runway_h": 250.24,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:58:03+00:00",
+   "last_seen": "2026-09-10T16:03:04+00:00",
    "last_ok_seen": "2026-09-10T15:41:50+00:00",
-   "samples": 529,
+   "samples": 516,
    "topups_6h": 1,
    "series": [
     [
@@ -16355,14 +16355,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 474.6087,
-   "runway_h": 281.46,
+   "baseline_per_h": 475.1011,
+   "runway_h": 281.01,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:22+00:00",
+   "last_seen": "2026-09-10T16:04:25+00:00",
    "last_ok_seen": "2026-09-10T15:43:25+00:00",
-   "samples": 534,
+   "samples": 521,
    "topups_6h": 0,
    "series": [
     [
@@ -17976,14 +17976,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 2.9269,
-   "runway_h": 432.41,
+   "baseline_per_h": 3.0047,
+   "runway_h": 428.85,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T16:01:07+00:00",
+   "last_seen": "2026-09-10T16:06:12+00:00",
    "last_ok_seen": "2026-09-10T15:42:33+00:00",
-   "samples": 288,
+   "samples": 279,
    "topups_6h": 3,
    "series": [
     [
@@ -19602,9 +19602,9 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:22+00:00",
+   "last_seen": "2026-09-10T16:04:23+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
-   "samples": 552,
+   "samples": 539,
    "topups_6h": 0,
    "series": []
   },
@@ -19622,9 +19622,9 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:23+00:00",
+   "last_seen": "2026-09-10T16:04:26+00:00",
    "last_ok_seen": "2026-09-10T15:43:27+00:00",
-   "samples": 522,
+   "samples": 509,
    "topups_6h": 0,
    "series": []
   },
@@ -19637,14 +19637,14 @@
    "spend_24h": null,
    "spend_30d": null,
    "burn_per_h": 0.0,
-   "baseline_per_h": 4.6923,
+   "baseline_per_h": 4.7243,
    "runway_h": null,
    "warm": true,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-10T15:59:25+00:00",
+   "last_seen": "2026-09-10T16:04:27+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
-   "samples": 534,
+   "samples": 521,
    "topups_6h": 0,
    "series": [
     [
