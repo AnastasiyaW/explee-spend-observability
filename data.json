@@ -1,38 +1,38 @@
 {
- "generated": "2026-09-11T10:16:04+00:00",
+ "generated": "2026-09-11T10:21:27+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
  },
  "api": {
-  "reads": 14944,
-  "ok": 10681,
-  "failed": 4263,
-  "success_pct": 71.47,
+  "reads": 14787,
+  "ok": 10521,
+  "failed": 4266,
+  "success_pct": 71.15,
   "latency_ms": {
-   "p50": 176.8,
-   "p95": 796.9,
-   "max": 35908.2
+   "p50": 177.0,
+   "p95": 799.7,
+   "max": 27220.1
   },
   "faults": [
    {
     "kind": "500 http 500",
-    "count": 3474,
+    "count": 3487,
     "providers": 15
    },
    {
     "kind": "429 rate limited (429)",
-    "count": 336,
+    "count": 329,
     "providers": 2
    },
    {
     "kind": "504 http 504",
-    "count": 194,
+    "count": 193,
     "providers": 15
    },
    {
     "kind": "200 empty json object",
-    "count": 173,
+    "count": 171,
     "providers": 15
    },
    {
@@ -58,79 +58,79 @@
   ],
   "per_provider": {
    "tremendous": {
-    "reads": 838,
-    "failed": 417,
-    "failure_pct": 49.8
+    "reads": 827,
+    "failed": 415,
+    "failure_pct": 50.2
    },
    "findymail": {
-    "reads": 843,
-    "failed": 412,
-    "failure_pct": 48.9
+    "reads": 834,
+    "failed": 409,
+    "failure_pct": 49.0
    },
    "brightdata": {
-    "reads": 982,
-    "failed": 275,
-    "failure_pct": 28.0
+    "reads": 970,
+    "failed": 274,
+    "failure_pct": 28.2
    },
    "elevenlabs": {
-    "reads": 990,
-    "failed": 270,
-    "failure_pct": 27.3
+    "reads": 977,
+    "failed": 271,
+    "failure_pct": 27.7
    },
    "resend": {
-    "reads": 993,
-    "failed": 267,
-    "failure_pct": 26.9
+    "reads": 989,
+    "failed": 268,
+    "failure_pct": 27.1
    },
    "evomi": {
-    "reads": 1018,
-    "failed": 271,
-    "failure_pct": 26.6
-   },
-   "meta_ads": {
-    "reads": 1004,
-    "failed": 262,
-    "failure_pct": 26.1
+    "reads": 1006,
+    "failed": 272,
+    "failure_pct": 27.0
    },
    "openrouter": {
-    "reads": 1022,
-    "failed": 267,
-    "failure_pct": 26.1
+    "reads": 1011,
+    "failed": 268,
+    "failure_pct": 26.5
+   },
+   "meta_ads": {
+    "reads": 991,
+    "failed": 263,
+    "failure_pct": 26.5
    },
    "openai": {
-    "reads": 1024,
-    "failed": 263,
-    "failure_pct": 25.7
+    "reads": 1013,
+    "failed": 264,
+    "failure_pct": 26.1
    },
    "scrapfly": {
-    "reads": 1022,
-    "failed": 262,
-    "failure_pct": 25.6
+    "reads": 1009,
+    "failed": 263,
+    "failure_pct": 26.1
    },
    "vastai": {
-    "reads": 1039,
-    "failed": 262,
-    "failure_pct": 25.2
-   },
-   "bounceban": {
-    "reads": 1040,
-    "failed": 261,
-    "failure_pct": 25.1
-   },
-   "zerobounce": {
-    "reads": 1035,
-    "failed": 257,
-    "failure_pct": 24.8
+    "reads": 1028,
+    "failed": 263,
+    "failure_pct": 25.6
    },
    "twocaptcha": {
-    "reads": 1032,
-    "failed": 256,
-    "failure_pct": 24.8
+    "reads": 1021,
+    "failed": 257,
+    "failure_pct": 25.2
+   },
+   "zerobounce": {
+    "reads": 1022,
+    "failed": 257,
+    "failure_pct": 25.1
    },
    "anthropic": {
-    "reads": 1062,
-    "failed": 261,
-    "failure_pct": 24.6
+    "reads": 1050,
+    "failed": 262,
+    "failure_pct": 25.0
+   },
+   "bounceban": {
+    "reads": 1039,
+    "failed": 260,
+    "failure_pct": 25.0
    }
   }
  },
@@ -150,7 +150,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:13:18+00:00",
+   "last_seen": "2026-09-11T10:18:19+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -170,7 +170,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:13:57+00:00",
+   "last_seen": "2026-09-11T10:18:59+00:00",
    "last_ok_seen": "2026-09-10T15:43:06+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -190,7 +190,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:14:03+00:00",
+   "last_seen": "2026-09-11T10:19:06+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -210,7 +210,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:14:07+00:00",
+   "last_seen": "2026-09-11T10:19:11+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -230,7 +230,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:00+00:00",
+   "last_seen": "2026-09-11T10:20:03+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -250,7 +250,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:25+00:00",
+   "last_seen": "2026-09-11T10:20:28+00:00",
    "last_ok_seen": "2026-09-10T15:43:04+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -270,7 +270,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:13:54+00:00",
+   "last_seen": "2026-09-11T10:18:57+00:00",
    "last_ok_seen": "2026-09-10T15:43:27+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -290,7 +290,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:08+00:00",
+   "last_seen": "2026-09-11T10:20:11+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -310,7 +310,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:11+00:00",
+   "last_seen": "2026-09-11T10:20:13+00:00",
    "last_ok_seen": "2026-09-10T15:43:12+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -330,7 +330,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:48+00:00",
+   "last_seen": "2026-09-11T10:20:49+00:00",
    "last_ok_seen": "2026-09-10T15:35:11+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -350,7 +350,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:09+00:00",
+   "last_seen": "2026-09-11T10:20:11+00:00",
    "last_ok_seen": "2026-09-10T15:43:17+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -370,7 +370,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:59+00:00",
+   "last_seen": "2026-09-11T10:21:02+00:00",
    "last_ok_seen": "2026-09-10T15:42:33+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -390,7 +390,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:12:48+00:00",
+   "last_seen": "2026-09-11T10:17:52+00:00",
    "last_ok_seen": "2026-09-10T15:41:50+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -410,7 +410,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:01+00:00",
+   "last_seen": "2026-09-11T10:20:02+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -430,7 +430,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T10:15:12+00:00",
+   "last_seen": "2026-09-11T10:20:13+00:00",
    "last_ok_seen": "2026-09-10T15:43:25+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -438,6 +438,114 @@
   }
  ],
  "alerts": [
+  {
+   "ts": "2026-09-11T10:20:13+00:00",
+   "provider": "zerobounce",
+   "text": "zerobounce: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:20:13+00:00",
+   "provider": "openrouter",
+   "text": "openrouter: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:20:11+00:00",
+   "provider": "scrapfly",
+   "text": "scrapfly: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:20:11+00:00",
+   "provider": "openai",
+   "text": "openai: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:20:04+00:00",
+   "provider": "evomi",
+   "text": "evomi: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:20:02+00:00",
+   "provider": "vastai",
+   "text": "vastai: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:19:11+00:00",
+   "provider": "elevenlabs",
+   "text": "elevenlabs: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:19:06+00:00",
+   "provider": "brightdata",
+   "text": "brightdata: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:18:59+00:00",
+   "provider": "bounceban",
+   "text": "bounceban: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:18:57+00:00",
+   "provider": "meta_ads",
+   "text": "meta_ads: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:18:19+00:00",
+   "provider": "anthropic",
+   "text": "anthropic: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
+  {
+   "ts": "2026-09-11T10:17:52+00:00",
+   "provider": "twocaptcha",
+   "text": "twocaptcha: 226 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
+   "level": "critical",
+   "kind": "stale",
+   "failures": 226,
+   "reason": "http 500"
+  },
   {
    "ts": "2026-09-11T10:10:46+00:00",
    "provider": "resend",
@@ -862,112 +970,6 @@
    "level": "critical",
    "kind": "stale",
    "failures": 208,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:48:14+00:00",
-   "provider": "bounceban",
-   "text": "bounceban: 208 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 208,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:47:43+00:00",
-   "provider": "anthropic",
-   "text": "anthropic: 208 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 208,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:47:07+00:00",
-   "provider": "twocaptcha",
-   "text": "twocaptcha: 208 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 208,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:40:02+00:00",
-   "provider": "resend",
-   "text": "resend: 208 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 208,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:33:29+00:00",
-   "provider": "",
-   "text": "the stand's catalog (/providers) has failed 202 times in a row. Nothing is being recorded: every sample is keyed by the world identity and every provider comes from the catalog, so this is the monitor going blind rather than one account going quiet.",
-   "level": "critical",
-   "kind": "control",
-   "failures": 202
-  },
-  {
-   "ts": "2026-09-11T08:26:24+00:00",
-   "provider": "",
-   "text": "the stand's world identity (/meta) has failed 993 times in a row. Nothing is being recorded: every sample is keyed by the world identity and every provider comes from the catalog, so this is the monitor going blind rather than one account going quiet.",
-   "level": "critical",
-   "kind": "control",
-   "failures": 993
-  },
-  {
-   "ts": "2026-09-11T08:25:08+00:00",
-   "provider": "tremendous",
-   "text": "tremendous: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:24:31+00:00",
-   "provider": "findymail",
-   "text": "findymail: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:19:14+00:00",
-   "provider": "openrouter",
-   "text": "openrouter: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:19:10+00:00",
-   "provider": "scrapfly",
-   "text": "scrapfly: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:19:09+00:00",
-   "provider": "vastai",
-   "text": "vastai: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
-   "reason": "http 500"
-  },
-  {
-   "ts": "2026-09-11T08:19:08+00:00",
-   "provider": "openai",
-   "text": "openai: 202 consecutive failed reads (http 500). No current balance - a spend spike here would not be seen.",
-   "level": "critical",
-   "kind": "stale",
-   "failures": 202,
    "reason": "http 500"
   }
  ]
