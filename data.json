@@ -1,43 +1,43 @@
 {
- "generated": "2026-09-11T03:57:36+00:00",
+ "generated": "2026-09-11T04:02:42+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
  },
  "api": {
-  "reads": 27728,
-  "ok": 23587,
-  "failed": 4141,
-  "success_pct": 85.07,
+  "reads": 27566,
+  "ok": 23429,
+  "failed": 4137,
+  "success_pct": 84.99,
   "latency_ms": {
-   "p50": 166.2,
-   "p95": 517.1,
+   "p50": 166.4,
+   "p95": 517.5,
    "max": 40206.7
   },
   "faults": [
    {
     "kind": "500 http 500",
-    "count": 2431,
+    "count": 2447,
     "providers": 15
    },
    {
     "kind": "429 rate limited (429)",
-    "count": 737,
+    "count": 731,
     "providers": 2
    },
    {
     "kind": "504 http 504",
-    "count": 398,
+    "count": 396,
     "providers": 15
    },
    {
     "kind": "200 empty json object",
-    "count": 381,
+    "count": 375,
     "providers": 15
    },
    {
     "kind": "503 http 503",
-    "count": 172,
+    "count": 166,
     "providers": 14
    },
    {
@@ -58,74 +58,74 @@
   ],
   "per_provider": {
    "findymail": {
-    "reads": 1470,
-    "failed": 580,
-    "failure_pct": 39.5
+    "reads": 1461,
+    "failed": 578,
+    "failure_pct": 39.6
    },
    "tremendous": {
-    "reads": 1505,
-    "failed": 561,
+    "reads": 1495,
+    "failed": 558,
     "failure_pct": 37.3
    },
    "bounceban": {
-    "reads": 1908,
+    "reads": 1895,
     "failed": 244,
-    "failure_pct": 12.8
+    "failure_pct": 12.9
    },
    "brightdata": {
-    "reads": 1884,
-    "failed": 239,
-    "failure_pct": 12.7
+    "reads": 1871,
+    "failed": 240,
+    "failure_pct": 12.8
    },
    "openrouter": {
-    "reads": 1870,
+    "reads": 1858,
+    "failed": 236,
+    "failure_pct": 12.7
+   },
+   "resend": {
+    "reads": 1871,
     "failed": 235,
     "failure_pct": 12.6
    },
    "evomi": {
-    "reads": 1908,
-    "failed": 238,
+    "reads": 1895,
+    "failed": 237,
     "failure_pct": 12.5
    },
    "elevenlabs": {
-    "reads": 1875,
-    "failed": 232,
-    "failure_pct": 12.4
-   },
-   "resend": {
-    "reads": 1883,
-    "failed": 234,
-    "failure_pct": 12.4
-   },
-   "vastai": {
-    "reads": 1929,
-    "failed": 231,
-    "failure_pct": 12.0
+    "reads": 1862,
+    "failed": 233,
+    "failure_pct": 12.5
    },
    "meta_ads": {
-    "reads": 1886,
+    "reads": 1874,
     "failed": 227,
-    "failure_pct": 12.0
+    "failure_pct": 12.1
+   },
+   "vastai": {
+    "reads": 1916,
+    "failed": 231,
+    "failure_pct": 12.1
    },
    "scrapfly": {
-    "reads": 1903,
-    "failed": 227,
-    "failure_pct": 11.9
+    "reads": 1891,
+    "failed": 228,
+    "failure_pct": 12.1
    },
    "twocaptcha": {
-    "reads": 1912,
-    "failed": 225,
-    "failure_pct": 11.8
-   },
-   "zerobounce": {
-    "reads": 1927,
-    "failed": 228,
-    "failure_pct": 11.8
+    "reads": 1899,
+    "failed": 226,
+    "failure_pct": 11.9
    },
    "anthropic": {
-    "reads": 1955,
+    "reads": 1942,
     "failed": 225,
-    "failure_pct": 11.5
+    "failure_pct": 11.6
+   },
+   "zerobounce": {
+    "reads": 1923,
+    "failed": 224,
+    "failure_pct": 11.6
    },
    "openai": {
     "reads": 1913,
@@ -150,7 +150,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:55:35+00:00",
+   "last_seen": "2026-09-11T04:00:37+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -170,7 +170,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:55:56+00:00",
+   "last_seen": "2026-09-11T04:00:58+00:00",
    "last_ok_seen": "2026-09-10T15:43:06+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -190,7 +190,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:00+00:00",
+   "last_seen": "2026-09-11T04:01:03+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -210,7 +210,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:10+00:00",
+   "last_seen": "2026-09-11T04:01:12+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -230,7 +230,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:57:02+00:00",
+   "last_seen": "2026-09-11T04:02:05+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -250,7 +250,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:52:36+00:00",
+   "last_seen": "2026-09-11T04:02:41+00:00",
    "last_ok_seen": "2026-09-10T15:43:04+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -270,7 +270,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:04+00:00",
+   "last_seen": "2026-09-11T04:01:06+00:00",
    "last_ok_seen": "2026-09-10T15:43:27+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -290,7 +290,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:56+00:00",
+   "last_seen": "2026-09-11T04:01:58+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -310,7 +310,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:57:08+00:00",
+   "last_seen": "2026-09-11T04:02:10+00:00",
    "last_ok_seen": "2026-09-10T15:43:12+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -330,7 +330,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:52:55+00:00",
+   "last_seen": "2026-09-11T03:57:57+00:00",
    "last_ok_seen": "2026-09-10T15:35:11+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -350,7 +350,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:57:10+00:00",
+   "last_seen": "2026-09-11T04:02:12+00:00",
    "last_ok_seen": "2026-09-10T15:43:17+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -370,7 +370,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:52:54+00:00",
+   "last_seen": "2026-09-11T03:57:57+00:00",
    "last_ok_seen": "2026-09-10T15:42:33+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -390,7 +390,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:54:27+00:00",
+   "last_seen": "2026-09-11T03:59:30+00:00",
    "last_ok_seen": "2026-09-10T15:41:50+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -410,7 +410,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:58+00:00",
+   "last_seen": "2026-09-11T04:01:59+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -430,7 +430,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 500",
-   "last_seen": "2026-09-11T03:56:55+00:00",
+   "last_seen": "2026-09-11T04:01:57+00:00",
    "last_ok_seen": "2026-09-10T15:43:25+00:00",
    "samples": 0,
    "topups_6h": 0,
