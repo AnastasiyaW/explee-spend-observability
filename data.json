@@ -1,29 +1,29 @@
 {
- "generated": "2026-09-12T15:24:50+00:00",
+ "generated": "2026-09-12T15:30:26+00:00",
  "world": {
   "world_epoch": 1787270400.0,
   "fingerprint": "b3f76a59761b"
  },
  "api": {
-  "reads": 4290,
+  "reads": 4289,
   "ok": 0,
-  "failed": 4290,
+  "failed": 4289,
   "success_pct": 0.0,
   "latency_ms": {
-   "p50": 85.6,
-   "p95": 298.9,
+   "p50": 85.4,
+   "p95": 298.8,
    "max": 7219.8
   },
   "faults": [
    {
     "kind": "500 http 500",
-    "count": 4280,
+    "count": 4264,
     "providers": 15
    },
    {
     "kind": "521 http 521",
-    "count": 9,
-    "providers": 9
+    "count": 24,
+    "providers": 15
    },
    {
     "kind": "- URLError",
@@ -32,11 +32,6 @@
    }
   ],
   "per_provider": {
-   "twocaptcha": {
-    "reads": 286,
-    "failed": 286,
-    "failure_pct": 100.0
-   },
    "anthropic": {
     "reads": 286,
     "failed": 286,
@@ -67,12 +62,12 @@
     "failed": 286,
     "failure_pct": 100.0
    },
-   "openai": {
+   "findymail": {
     "reads": 286,
     "failed": 286,
     "failure_pct": 100.0
    },
-   "findymail": {
+   "openai": {
     "reads": 286,
     "failed": 286,
     "failure_pct": 100.0
@@ -106,6 +101,11 @@
     "reads": 286,
     "failed": 286,
     "failure_pct": 100.0
+   },
+   "twocaptcha": {
+    "reads": 285,
+    "failed": 285,
+    "failure_pct": 100.0
    }
   }
  },
@@ -124,8 +124,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:21:23+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:26:25+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -144,8 +144,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:22:11+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:27:12+00:00",
    "last_ok_seen": "2026-09-10T15:43:06+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -164,8 +164,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:22:12+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:27:15+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -184,8 +184,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:22:06+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:27:08+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -205,7 +205,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:13+00:00",
+   "last_seen": "2026-09-12T15:29:17+00:00",
    "last_ok_seen": "2026-09-10T15:43:24+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -225,7 +225,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:05+00:00",
+   "last_seen": "2026-09-12T15:29:08+00:00",
    "last_ok_seen": "2026-09-10T15:43:04+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -244,8 +244,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:21:58+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:27:01+00:00",
    "last_ok_seen": "2026-09-10T15:43:27+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -265,7 +265,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:22+00:00",
+   "last_seen": "2026-09-12T15:29:24+00:00",
    "last_ok_seen": "2026-09-10T15:43:10+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -285,7 +285,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:11+00:00",
+   "last_seen": "2026-09-12T15:29:13+00:00",
    "last_ok_seen": "2026-09-10T15:43:12+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -305,7 +305,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:15+00:00",
+   "last_seen": "2026-09-12T15:29:18+00:00",
    "last_ok_seen": "2026-09-10T15:35:11+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -325,7 +325,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:25+00:00",
+   "last_seen": "2026-09-12T15:29:27+00:00",
    "last_ok_seen": "2026-09-10T15:43:17+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -345,7 +345,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:40+00:00",
+   "last_seen": "2026-09-12T15:29:41+00:00",
    "last_ok_seen": "2026-09-10T15:42:33+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -364,8 +364,8 @@
    "runway_h": null,
    "warm": false,
    "healthy": false,
-   "last_error": "http 500",
-   "last_seen": "2026-09-12T15:21:21+00:00",
+   "last_error": "http 521",
+   "last_seen": "2026-09-12T15:26:22+00:00",
    "last_ok_seen": "2026-09-10T15:41:50+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -385,7 +385,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:02+00:00",
+   "last_seen": "2026-09-12T15:29:05+00:00",
    "last_ok_seen": "2026-09-10T15:43:16+00:00",
    "samples": 0,
    "topups_6h": 0,
@@ -405,7 +405,7 @@
    "warm": false,
    "healthy": false,
    "last_error": "http 521",
-   "last_seen": "2026-09-12T15:24:34+00:00",
+   "last_seen": "2026-09-12T15:29:36+00:00",
    "last_ok_seen": "2026-09-10T15:43:25+00:00",
    "samples": 0,
    "topups_6h": 0,
